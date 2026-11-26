@@ -10,6 +10,14 @@ using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Render, Railway, Fly and friends hand the container a port in PORT and expect the app to
+// listen on it. ASP.NET Core does not read that variable on its own, so without this the
+// platform health check never connects and the deploy is marked failed.
+if (Environment.GetEnvironmentVariable("PORT") is { Length: > 0 } port)
+{
+    builder.WebHost.UseUrls($"http://*:{port}");
+}
+
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");
 builder.Services.AddProblemDetails();

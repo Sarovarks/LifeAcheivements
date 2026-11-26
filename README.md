@@ -9,10 +9,14 @@ trophy screen in front of all of it.
 **Phase 2** is the social half: friends, an activity feed with reactions, friend verification
 of claims, and a weekly leaderboard.
 
-**Phase 3** is shipping it: both apps are containerised, CI runs the tests and builds the
-images on every push, and `infra/main.bicep` describes an Azure Container Apps environment with
-managed PostgreSQL. See [DEPLOYMENT.md](DEPLOYMENT.md). Nothing has actually been deployed -
-that spends money in your subscription.
+**Phase 3** is shipping it: both apps are containerised and CI runs the tests and builds the
+images on every push. Two hosting paths are wired up:
+
+- [FREE-HOSTING.md](FREE-HOSTING.md) - GitHub Pages + Render + Neon, no card, no monthly bill.
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Azure Container Apps and managed PostgreSQL, via
+  `infra/main.bicep`.
+
+Nothing is deployed yet; both need accounts that only you can create.
 
 ---
 
@@ -100,6 +104,8 @@ LifeAchievements.slnx                     (.NET 10's XML solution format)
 ├── docker-compose.full.yml               the whole stack in containers
 ├── .env.example                          template for the gitignored .env
 ├── DEPLOYMENT.md                         containers, CI and Azure
+├── FREE-HOSTING.md                       GitHub Pages + Render + Neon
+├── render.yaml                           Render blueprint for the API
 ├── .github/workflows/                    ci.yml (tests + images), deploy.yml (Azure)
 ├── infra/main.bicep                       Container Apps + managed PostgreSQL
 ├── src/

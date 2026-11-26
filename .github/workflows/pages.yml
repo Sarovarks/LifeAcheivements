@@ -1,0 +1,98 @@
+name: Deploy frontend to GitHub Pages
+
+# The Blazor app publishes to plain static files, so GitHub Pages can host it for nothing.
+#
+# Before the first run: Settings -> Pages -> Source -> "GitHub Actions".
+# Then set a repository variable API_BASE_URL to wherever the API lives, e.g.
+# https://lifeachievements-api.onrender.com - without it the app has nothing to talk to.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/LifeAchievements.Web/**'
+      - 'src/LifeAchievements.Shared/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; let a run in progress finish rather than cancelling it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish
+        run: dotnet publish src/LifeAchievements.Web/LifeAchievements.Web.csproj -c Release -o publish
+
+      # Pages serves a project site from /<repo>/, not from the root, so every absolute
+      # path the app generates has to be told about that prefix.
+      - name: Point base href at the repository subpath
+        run: |
+          BASE="/${GITHUB_REPOSITORY#*/}/"
+          echo "Rewriting <base href> to ${BASE}"
+          sed -i "s|<base href=\"/\" />|<base href=\"${BASE}\" />|g" publish/wwwroot/index.html
+          grep -o '<base href="[^"]*"' publish/wwwroot/index.html
+
+      # Jekyll runs by default on Pages and silently drops any folder starting with an
+      # underscore - which is exactly where Blazor puts _framework. Without this file the
+      # site loads and then fails to find the runtime.
+      - name: Disable Jekyll
+        run: touch publish/wwwroot/.nojekyll
+
+      # Pages has no SPA rewrite rule. Serving index.html as the 404 page is how a deep
+      # link like /friends reaches the Blazor router instead of a GitHub 404.
+      - name: SPA fallback
+        run: cp publish/wwwroot/index.html publish/wwwroot/404.html
+
+      - name: Point the app at the API
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          if [ -z "${API_BASE_URL}" ]; then
+            echo "::warning::API_BASE_URL is not set - the published app will have no API to call."
+          else
+            printf '{\n  "ApiBaseUrl": "%s"\n}\n' "${API_BASE_URL}" > publish/wwwroot/appsettings.json
+            echo "ApiBaseUrl set to ${API_BASE_URL}"
+          fi
+          cat publish/wwwroot/appsettings.json
+
+      # index.html and appsettings.json were both edited after publish, so the hashes the
+      # service worker recorded for them are now wrong. Left alone, the integrity check
+      # fails and the app quietly stops being installable while still appearing to work.
+      - name: Re-stamp service worker integrity hashes
+        run: python .github/scripts/fix_service_worker_integrity.py publish/wwwroot
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: publish/wwwroot
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
