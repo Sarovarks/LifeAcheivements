@@ -22,7 +22,7 @@ accounts and pasting three values.
 
 | Piece | State |
 |---|---|
-| Frontend | **Live** - https://sarovarks.github.io/LifeAcheivements/ |
+| Frontend | **Live** - https://scoremylife.pages.dev (Cloudflare Pages) |
 | API | **Live** - https://lifeachievements-api.onrender.com |
 | Database | **Live** - Neon, Singapore, free plan |
 

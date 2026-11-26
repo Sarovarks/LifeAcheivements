@@ -2,9 +2,9 @@
 
 Your real life, scored like a video game. Do things, unlock achievements, earn XP, level up.
 
-**Live:** https://sarovarks.github.io/LifeAcheivements/
+**Live:** https://scoremylife.pages.dev
 
-Frontend on GitHub Pages, API on Render, PostgreSQL on Neon - all on free tiers. The API
+Frontend on Cloudflare Pages, API on Render, PostgreSQL on Neon - all on free tiers. The API
 sleeps after 15 minutes idle, so the first visit after a quiet spell takes about a minute to
 wake. See [FREE-HOSTING.md](FREE-HOSTING.md).
 
