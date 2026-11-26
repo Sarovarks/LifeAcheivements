@@ -1,0 +1,79 @@
+@page "/login"
+@layout MainLayout
+@attribute [AllowAnonymous]
+@inject GameApiClient Api
+@inject NavigationManager Nav
+
+<PageTitle>Sign in</PageTitle>
+
+<div class="auth">
+    <div class="auth__logo">
+        <Icon Name="trophy" Size="30" />
+    </div>
+
+    <h1 class="auth__title">Welcome back</h1>
+    <p class="auth__sub">Your run is still going. Pick up where you left off.</p>
+
+    @if (_error is not null)
+    {
+        <div class="form-error">@_error</div>
+    }
+
+    <EditForm Model="_model" OnValidSubmit="SignIn">
+        <DataAnnotationsValidator />
+
+        <div class="field">
+            <label for="email">Email</label>
+            <InputText id="email" @bind-Value="_model.Email" type="email" autocomplete="email" placeholder="you@example.com" />
+        </div>
+
+        <div class="field">
+            <label for="password">Password</label>
+            <InputText id="password" @bind-Value="_model.Password" type="password" autocomplete="current-password" placeholder="At least 8 characters" />
+        </div>
+
+        <button class="btn btn--gold" type="submit" disabled="@_busy">
+            @(_busy ? "Signing in..." : "Sign in")
+        </button>
+    </EditForm>
+
+    <p class="auth__switch">
+        New here? <a href="register">Create an account</a>
+    </p>
+</div>
+
+@code {
+    private readonly Credentials _model = new();
+    private bool _busy;
+    private string? _error;
+
+    private async Task SignIn()
+    {
+        _busy = true;
+        _error = null;
+
+        try
+        {
+            await Api.SignInAsync(_model.Email, _model.Password);
+            Nav.NavigateTo("", replace: true);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Could not reach the server. Is the API running?";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private class Credentials
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

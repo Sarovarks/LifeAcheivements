@@ -1,0 +1,37 @@
+using FluentValidation;
+using LifeAchievements.Application.Abstractions;
+using LifeAchievements.Application.Achievements.Commands;
+using LifeAchievements.Application.Achievements.Queries;
+using LifeAchievements.Application.Common;
+using LifeAchievements.Application.Events;
+using LifeAchievements.Application.Users.Queries;
+using LifeAchievements.Domain.Events;
+using LifeAchievements.Shared.Dtos;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace LifeAchievements.Application;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddApplication(this IServiceCollection services)
+    {
+        services.AddScoped<IDispatcher, Dispatcher>();
+        services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+        services.AddSingleton<IClock, SystemClock>();
+
+        services.AddValidatorsFromAssemblyContaining<ClaimAchievementCommandValidator>();
+
+        // Commands
+        services.AddScoped<ICommandHandler<ClaimAchievementCommand, UnlockResultDto>, ClaimAchievementCommandHandler>();
+
+        // Queries
+        services.AddScoped<IQueryHandler<GetMeQuery, MeDto>, GetMeQueryHandler>();
+        services.AddScoped<IQueryHandler<GetAchievementsQuery, IReadOnlyList<AchievementDto>>, GetAchievementsQueryHandler>();
+        services.AddScoped<IQueryHandler<GetRecentUnlocksQuery, IReadOnlyList<RecentUnlockDto>>, GetRecentUnlocksQueryHandler>();
+
+        // Domain event handlers
+        services.AddScoped<IDomainEventHandler<AchievementUnlocked>, HiddenAchievementRulesHandler>();
+
+        return services;
+    }
+}

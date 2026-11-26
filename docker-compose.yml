@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: lifeachievements-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lifeachievements
+      POSTGRES_PASSWORD: lifeachievements
+      POSTGRES_DB: lifeachievements
+    ports:
+      - "5433:5432"
+    volumes:
+      - lifeachievements-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lifeachievements -d lifeachievements"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  lifeachievements-pgdata:

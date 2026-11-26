@@ -1,0 +1,218 @@
+﻿@page "/"
+@attribute [Authorize]
+@inject GameApiClient Api
+@inject TokenStore Tokens
+@inject NavigationManager Nav
+
+<PageTitle>Home</PageTitle>
+
+<div class="app-shell">
+    @if (_loading)
+    {
+        <div class="spinner"></div>
+    }
+    else if (_error is not null)
+    {
+        <div class="screen-pad">
+            <div class="form-error">@_error</div>
+            <button class="btn btn--ghost" @onclick="Load">Try again</button>
+        </div>
+    }
+    else if (_me is not null)
+    {
+        <header class="topbar">
+            <div>
+                <div class="topbar__greeting">@Greeting</div>
+                <h1 class="topbar__name">@_me.DisplayName</h1>
+            </div>
+            <button class="icon-button" aria-label="Notifications" disabled title="Coming in Phase 2">
+                <Icon Name="bell" Size="20" />
+            </button>
+        </header>
+
+        <section class="card">
+            <div class="profile">
+                <div class="ring">
+                    <svg width="104" height="104">
+                        <circle class="ring__track" cx="52" cy="52" r="45" stroke-width="9" fill="none" />
+                        @* At 0% the round line cap would still paint a stray gold dot, so skip the arc. *@
+                        @if (_me.ProgressPercent > 0)
+                        {
+                            <circle class="ring__value" cx="52" cy="52" r="45" stroke-width="9" fill="none"
+                                    stroke-dasharray="@Circumference"
+                                    stroke-dashoffset="@RingOffset" />
+                        }
+                    </svg>
+                    <div class="ring__center">
+                        <div>
+                            <div class="ring__label">Level</div>
+                            <div class="ring__level">@_me.Level</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="profile__title">@_me.LevelTitle</div>
+                    <div class="profile__sub">@_me.XpToNextLevel XP to level @(_me.Level + 1)</div>
+                    <div class="profile__xp">@_me.TotalXp.ToString("N0") XP total</div>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat__value">@_me.UnlockedCount</div>
+                    <div class="stat__label">Unlocked</div>
+                </div>
+                <div class="stat">
+                    <div class="stat__value stat__value--teal">@_me.DayStreak</div>
+                    <div class="stat__label">Day streak</div>
+                </div>
+                <div class="stat">
+                    <div class="stat__value">#@_me.FriendsRank</div>
+                    <div class="stat__label">Friends rank</div>
+                </div>
+            </div>
+        </section>
+
+        <h2 class="section-title">Today's quests</h2>
+        @if (_quests.Count == 0)
+        {
+            <div class="empty">Everything claimable is done for now. Go and live a little.</div>
+        }
+        else
+        {
+            @foreach (var quest in _quests)
+            {
+                <div class="quest">
+                    <div class="quest__head">
+                        <div class="icon-square"><Icon Name="@quest.Icon" /></div>
+                        <div class="row__body">
+                            <div class="row__name">@quest.Name</div>
+                            <div class="row__meta">@QuestHint(quest)</div>
+                        </div>
+                        <span class="xp-gain">+@quest.XpReward</span>
+                    </div>
+                    <div class="bar">
+                        <div class="bar__fill" style="width:@QuestProgress(quest)%"></div>
+                    </div>
+                </div>
+            }
+            <button class="btn btn--ghost" @onclick="@(() => Nav.NavigateTo("achievements"))">
+                See all achievements <Icon Name="chevron-right" Size="18" />
+            </button>
+        }
+
+        <h2 class="section-title">Recent unlocks</h2>
+        @if (_recent.Count == 0)
+        {
+            <div class="empty">No unlocks yet. Your first one is waiting on the Badges tab.</div>
+        }
+        else
+        {
+            @foreach (var unlock in _recent)
+            {
+                <div class="row">
+                    <div class="icon-square"><Icon Name="@unlock.Icon" /></div>
+                    <div class="row__body">
+                        <div class="row__name">@unlock.Name</div>
+                        <div class="row__meta">@Ago(unlock.UnlockedAt)</div>
+                    </div>
+                    <span class="xp-gain">+@unlock.XpGained</span>
+                </div>
+            }
+        }
+    }
+</div>
+
+<BottomNav />
+
+@code {
+    private MeDto? _me;
+    private List<AchievementDto> _quests = [];
+    private List<RecentUnlockDto> _recent = [];
+    private bool _loading = true;
+    private string? _error;
+
+    private const double Circumference = 2 * Math.PI * 45;
+
+    private string RingOffset => _me is null
+        ? Circumference.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)
+        : (Circumference * (1 - Math.Clamp(_me.ProgressPercent, 0, 100) / 100d))
+            .ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static string Greeting => DateTime.Now.Hour switch
+    {
+        < 5 => "Still awake?",
+        < 12 => "Good morning",
+        < 17 => "Good afternoon",
+        < 22 => "Good evening",
+        _ => "Winding down"
+    };
+
+    protected override Task OnInitializedAsync() => Load();
+
+    private async Task Load()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            _me = await Api.GetMeAsync();
+            await Tokens.UpdateDisplayNameAsync(_me.DisplayName);
+
+            var all = await Api.GetAchievementsAsync();
+
+            // "Quests" = what you could claim right now, cheapest first so the list feels doable.
+            _quests = all
+                .Where(a => a.Status is AchievementStatuses.Claimable or AchievementStatuses.Cooldown)
+                .OrderBy(a => a.Status == AchievementStatuses.Claimable ? 0 : 1)
+                .ThenBy(a => a.XpReward)
+                .Take(3)
+                .ToList();
+
+            _recent = await Api.GetRecentUnlocksAsync(5);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Could not reach the server. Is the API running?";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string QuestHint(AchievementDto quest) => quest.Status switch
+    {
+        AchievementStatuses.Cooldown when quest.ClaimableAgainAt is { } at => $"Ready {Until(at)}",
+        _ when quest.TimesUnlocked > 0 => $"Done {quest.TimesUnlocked} times - go again",
+        _ => quest.Description
+    };
+
+    private static int QuestProgress(AchievementDto quest) =>
+        quest.Status == AchievementStatuses.Claimable ? 100 : 35;
+
+    private static string Until(DateTimeOffset at)
+    {
+        var span = at - DateTimeOffset.Now;
+        if (span <= TimeSpan.Zero) return "now";
+        if (span.TotalHours >= 24) return $"in {(int)span.TotalDays}d";
+        if (span.TotalHours >= 1) return $"in {(int)span.TotalHours}h";
+        return $"in {Math.Max(1, (int)span.TotalMinutes)}m";
+    }
+
+    private static string Ago(DateTimeOffset at)
+    {
+        var span = DateTimeOffset.Now - at;
+        if (span.TotalMinutes < 1) return "just now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+        return at.ToLocalTime().ToString("d MMM");
+    }
+}

@@ -1,0 +1,191 @@
+@page "/achievements"
+@attribute [Authorize]
+@inject GameApiClient Api
+
+<PageTitle>Achievements</PageTitle>
+
+<div class="app-shell">
+    <header class="topbar">
+        <div>
+            <h1 class="topbar__name">Achievements</h1>
+            <div class="topbar__greeting">@Subtitle</div>
+        </div>
+    </header>
+
+    <div class="chips">
+        @foreach (var category in Categories)
+        {
+            <button class="chip @(category == _category ? "chip--active" : "")"
+                    @onclick="() => Filter(category)">
+                @category
+            </button>
+        }
+    </div>
+
+    @if (_error is not null)
+    {
+        <div class="form-error" style="margin-top:14px">@_error</div>
+    }
+
+    @if (_loading)
+    {
+        <div class="spinner"></div>
+    }
+    else
+    {
+        <div style="margin-top:16px">
+            @foreach (var achievement in Visible)
+            {
+                var locked = achievement.IsHidden && achievement.Status == AchievementStatuses.Locked;
+
+                <div class="row @(locked ? "row--locked" : "")">
+                    <div class="icon-square">
+                        <Icon Name="@achievement.Icon" />
+                    </div>
+
+                    <div class="row__body">
+                        <div class="row__name">@(locked ? "???" : achievement.Name)</div>
+                        <div class="row__desc">@achievement.Description</div>
+                        @if (achievement.Status == AchievementStatuses.Cooldown && achievement.ClaimableAgainAt is { } at)
+                        {
+                            <div class="row__meta">Ready @Until(at)</div>
+                        }
+                    </div>
+
+                    @switch (achievement.Status)
+                    {
+                        case AchievementStatuses.Claimable:
+                            <button class="pill pill--gold" disabled="@(_claiming == achievement.Id)"
+                                    @onclick="() => Claim(achievement)">
+                                @(_claiming == achievement.Id ? "..." : $"+{achievement.XpReward} XP")
+                            </button>
+                            break;
+
+                        case AchievementStatuses.Unlocked when achievement.IsRepeatable:
+                        case AchievementStatuses.Cooldown:
+                            <span class="pill pill--teal">Done &times;@achievement.TimesUnlocked</span>
+                            break;
+
+                        case AchievementStatuses.Unlocked:
+                            <span class="pill pill--teal">Unlocked</span>
+                            break;
+
+                        case AchievementStatuses.Pending:
+                            <span class="pill pill--ghost">Friend verifies</span>
+                            break;
+
+                        default:
+                            <span class="pill pill--ghost">
+                                <Icon Name="lock" Size="14" />
+                            </span>
+                            break;
+                    }
+                </div>
+            }
+
+            @if (Visible.Count == 0)
+            {
+                <div class="empty">Nothing in this category yet.</div>
+            }
+        </div>
+    }
+</div>
+
+<BottomNav />
+
+@if (_unlock is not null)
+{
+    <UnlockScreen Result="_unlock" OnClose="CloseUnlock" />
+}
+
+@code {
+    private static readonly string[] Categories = ["All", "Health", "Work", "Fun", "Social", "Mind"];
+
+    private List<AchievementDto> _all = [];
+    private string _category = "All";
+    private bool _loading = true;
+    private string? _error;
+    private Guid? _claiming;
+    private UnlockResultDto? _unlock;
+
+    private List<AchievementDto> Visible => _category == "All"
+        ? _all
+        : _all.Where(a => a.Category == _category).ToList();
+
+    private string Subtitle
+    {
+        get
+        {
+            var unlocked = _all.Count(a => a.TimesUnlocked > 0);
+            var hidden = _all.Count(a => a.IsHidden && a.Status == AchievementStatuses.Locked);
+            return $"{unlocked} of {_all.Count} unlocked · {hidden} hidden";
+        }
+    }
+
+    protected override Task OnInitializedAsync() => Load();
+
+    private async Task Load()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            // Always fetch everything and filter in the browser: the catalogue is ~50 rows,
+            // so this keeps the chips instant instead of a round trip per tap.
+            _all = await Api.GetAchievementsAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Could not reach the server. Is the API running?";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Filter(string category) => _category = category;
+
+    private async Task Claim(AchievementDto achievement)
+    {
+        _claiming = achievement.Id;
+        _error = null;
+
+        try
+        {
+            _unlock = await Api.ClaimAsync(achievement.Id);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Could not reach the server. Is the API running?";
+        }
+        finally
+        {
+            _claiming = null;
+        }
+    }
+
+    private async Task CloseUnlock()
+    {
+        _unlock = null;
+        await Load();
+    }
+
+    private static string Until(DateTimeOffset at)
+    {
+        var span = at - DateTimeOffset.Now;
+        if (span <= TimeSpan.Zero) return "now";
+        if (span.TotalHours >= 24) return $"in {(int)span.TotalDays}d";
+        if (span.TotalHours >= 1) return $"in {(int)span.TotalHours}h";
+        return $"in {Math.Max(1, (int)span.TotalMinutes)}m";
+    }
+}

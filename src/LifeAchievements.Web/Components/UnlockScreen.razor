@@ -1,0 +1,105 @@
+@* The trophy moment. Shown as a full-screen overlay straight after a successful claim. *@
+
+<div class="unlock">
+    <div class="unlock__inner">
+        <button class="icon-button unlock__close" @onclick="OnClose" aria-label="Close">
+            <Icon Name="close" Size="20" />
+        </button>
+
+        @if (Result.Status == AchievementStatuses.Pending)
+        {
+            <div class="unlock__kicker">Waiting on a friend</div>
+        }
+        else
+        {
+            <div class="unlock__kicker">Achievement unlocked</div>
+        }
+
+        <div class="badge-ring">
+            @foreach (var dot in Confetti)
+            {
+                <span class="confetti"
+                      style="left:@(dot.X)%; top:@(dot.Y)%; background:@dot.Colour; animation-delay:@(dot.Delay)s"></span>
+            }
+            <div class="badge">
+                <Icon Name="@Result.Icon" Size="56" />
+            </div>
+        </div>
+
+        <h1 class="unlock__name">@Result.Name</h1>
+        <p class="unlock__desc">@Result.Description</p>
+
+        <div class="unlock__pills">
+            @if (Result.Status == AchievementStatuses.Pending)
+            {
+                <span class="pill pill--ghost">Friend verifies</span>
+            }
+            else
+            {
+                <span class="pill pill--gold">+@Result.XpGained XP</span>
+            }
+            <span class="pill pill--teal">@Result.Tier</span>
+        </div>
+
+        @if (Result.LeveledUp)
+        {
+            <div class="unlock__levelup">
+                <strong>Level @Result.NewLevel</strong> reached &mdash; you are now a @Result.NewLevelTitle.
+            </div>
+        }
+
+        <div class="unlock__progress">
+            <div class="unlock__progress-head">
+                <span>Level @Result.NewLevel &middot; @Result.NewLevelTitle</span>
+                <span>@Result.XpToNextLevel XP to go</span>
+            </div>
+            <div class="bar">
+                <div class="bar__fill bar__fill--gold" style="width:@Percent%"></div>
+            </div>
+        </div>
+
+        @if (Result.BonusUnlocks.Count > 0)
+        {
+            <div class="unlock__bonus">
+                <div class="section-title" style="margin-top:0">Hidden achievements found</div>
+                @foreach (var bonus in Result.BonusUnlocks)
+                {
+                    <div class="row">
+                        <div class="icon-square"><Icon Name="@bonus.Icon" /></div>
+                        <div class="row__body">
+                            <div class="row__name">@bonus.Name</div>
+                            <div class="row__desc">@bonus.Description</div>
+                        </div>
+                        <span class="xp-gain">+@bonus.XpGained</span>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="unlock__actions">
+            <button class="btn btn--gold" disabled title="Coming in Phase 2">
+                <Icon Name="friends" Size="19" /> Share with friends
+            </button>
+            <button class="btn btn--ghost" @onclick="OnClose">Back to home</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public UnlockResultDto Result { get; set; } = null!;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private string Percent => Result.ProgressPercent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+
+    private record Dot(int X, int Y, string Colour, double Delay);
+
+    private static readonly Dot[] Confetti =
+    [
+        new(14, 22, "#F5B83D", 0),
+        new(80, 16, "#4FD1C5", 0.2),
+        new(88, 62, "#F5B83D", 0.45),
+        new(22, 74, "#4FD1C5", 0.65),
+        new(50, 8, "#F5B83D", 0.3),
+        new(8, 50, "#4FD1C5", 0.85)
+    ];
+}

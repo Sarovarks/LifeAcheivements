@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LifeAchievements.Api/LifeAchievements.Api.csproj" />
+    <Project Path="src/LifeAchievements.Application/LifeAchievements.Application.csproj" />
+    <Project Path="src/LifeAchievements.Domain/LifeAchievements.Domain.csproj" />
+    <Project Path="src/LifeAchievements.Infrastructure/LifeAchievements.Infrastructure.csproj" />
+    <Project Path="src/LifeAchievements.Shared/LifeAchievements.Shared.csproj" />
+    <Project Path="src/LifeAchievements.Web/LifeAchievements.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LifeAchievements.Application.Tests/LifeAchievements.Application.Tests.csproj" />
+    <Project Path="tests/LifeAchievements.Domain.Tests/LifeAchievements.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

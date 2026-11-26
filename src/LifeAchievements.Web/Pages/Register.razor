@@ -1,0 +1,89 @@
+@page "/register"
+@layout MainLayout
+@attribute [AllowAnonymous]
+@inject GameApiClient Api
+@inject TokenStore Tokens
+@inject NavigationManager Nav
+
+<PageTitle>Create an account</PageTitle>
+
+<div class="auth">
+    <div class="auth__logo">
+        <Icon Name="trophy" Size="30" />
+    </div>
+
+    <h1 class="auth__title">New game</h1>
+    <p class="auth__sub">Pick a name. Everything you do from here is worth XP.</p>
+
+    @if (_error is not null)
+    {
+        <div class="form-error">@_error</div>
+    }
+
+    <EditForm Model="_model" OnValidSubmit="CreateAccount">
+        <div class="field">
+            <label for="displayName">Display name</label>
+            <InputText id="displayName" @bind-Value="_model.DisplayName" autocomplete="nickname" placeholder="What should we call you?" />
+        </div>
+
+        <div class="field">
+            <label for="email">Email</label>
+            <InputText id="email" @bind-Value="_model.Email" type="email" autocomplete="email" placeholder="you@example.com" />
+        </div>
+
+        <div class="field">
+            <label for="password">Password</label>
+            <InputText id="password" @bind-Value="_model.Password" type="password" autocomplete="new-password" placeholder="At least 8 characters" />
+        </div>
+
+        <button class="btn btn--gold" type="submit" disabled="@_busy">
+            @(_busy ? "Creating..." : "Start playing")
+        </button>
+    </EditForm>
+
+    <p class="auth__switch">
+        Already have an account? <a href="login">Sign in</a>
+    </p>
+</div>
+
+@code {
+    private readonly Signup _model = new();
+    private bool _busy;
+    private string? _error;
+
+    private async Task CreateAccount()
+    {
+        _busy = true;
+        _error = null;
+
+        try
+        {
+            await Api.SignUpAsync(_model.Email, _model.Password, _model.DisplayName);
+
+            // Straight into the game - no "now go and log in" detour.
+            await Api.SignInAsync(_model.Email, _model.Password, _model.DisplayName);
+            await Tokens.UpdateDisplayNameAsync(_model.DisplayName);
+
+            Nav.NavigateTo("", replace: true);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Could not reach the server. Is the API running?";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private class Signup
+    {
+        public string DisplayName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

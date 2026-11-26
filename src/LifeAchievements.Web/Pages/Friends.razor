@@ -1,0 +1,26 @@
+@page "/friends"
+@attribute [Authorize]
+
+<PageTitle>Friends</PageTitle>
+
+<div class="app-shell">
+    <header class="topbar">
+        <div>
+            <h1 class="topbar__name">Friends</h1>
+            <div class="topbar__greeting">Coming in Phase 2</div>
+        </div>
+    </header>
+
+    <div class="card" style="margin-top:16px;text-align:center">
+        <div class="icon-square" style="margin:6px auto 14px">
+            <Icon Name="friends" Size="24" />
+        </div>
+        <h2 style="font-size:1.1rem">Nobody here yet</h2>
+        <p class="muted" style="font-size:0.88rem;margin:8px 0 0">
+            The weekly podium, the activity feed and friend verification all land in Phase 2.
+            Until then, your friend-verified claims sit patiently as Pending.
+        </p>
+    </div>
+</div>
+
+<BottomNav />

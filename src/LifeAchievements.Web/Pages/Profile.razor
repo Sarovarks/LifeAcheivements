@@ -1,0 +1,76 @@
+@page "/profile"
+@attribute [Authorize]
+@inject GameApiClient Api
+@inject NavigationManager Nav
+
+<PageTitle>Profile</PageTitle>
+
+<div class="app-shell">
+    <header class="topbar">
+        <h1 class="topbar__name">Profile</h1>
+    </header>
+
+    @if (_me is null)
+    {
+        <div class="spinner"></div>
+    }
+    else
+    {
+        <section class="card">
+            <div class="profile">
+                <div class="icon-square" style="width:62px;height:62px;min-width:62px;border-radius:19px">
+                    <Icon Name="profile" Size="28" />
+                </div>
+                <div>
+                    <div class="profile__title">@_me.DisplayName</div>
+                    <div class="profile__sub">@_me.Email</div>
+                    <div class="profile__xp">Level @_me.Level &middot; @_me.LevelTitle</div>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat__value">@_me.TotalXp.ToString("N0")</div>
+                    <div class="stat__label">Total XP</div>
+                </div>
+                <div class="stat">
+                    <div class="stat__value">@_me.UnlockedCount</div>
+                    <div class="stat__label">Unlocked</div>
+                </div>
+                <div class="stat">
+                    <div class="stat__value stat__value--teal">@_me.DayStreak</div>
+                    <div class="stat__label">Day streak</div>
+                </div>
+            </div>
+        </section>
+
+        <h2 class="section-title">Account</h2>
+        <button class="btn btn--ghost" @onclick="SignOut">
+            <Icon Name="logout" Size="19" /> Sign out
+        </button>
+    }
+</div>
+
+<BottomNav />
+
+@code {
+    private MeDto? _me;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _me = await Api.GetMeAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            // Nothing to show is better than an error screen on a secondary tab.
+        }
+    }
+
+    private async Task SignOut()
+    {
+        await Api.SignOutAsync();
+        Nav.NavigateTo("login", replace: true);
+    }
+}

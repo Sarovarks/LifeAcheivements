@@ -1,0 +1,32 @@
+@inject NavigationManager Nav
+
+<nav class="nav">
+    <a class="nav__item @Active("")" href="">
+        <Icon Name="home" Size="21" />
+        <span>Home</span>
+    </a>
+    <a class="nav__item @Active("achievements")" href="achievements">
+        <Icon Name="badges" Size="21" />
+        <span>Badges</span>
+    </a>
+
+    <a class="nav__claim" href="achievements" aria-label="Claim an achievement">
+        <Icon Name="plus" Size="26" />
+    </a>
+
+    <a class="nav__item @Active("friends")" href="friends">
+        <Icon Name="friends" Size="21" />
+        <span>Friends</span>
+    </a>
+    <a class="nav__item @Active("profile")" href="profile">
+        <Icon Name="profile" Size="21" />
+        <span>Profile</span>
+    </a>
+</nav>
+
+@code {
+    private string Current => Nav.ToBaseRelativePath(Nav.Uri).Split('?')[0].Trim('/');
+
+    private string Active(string path) =>
+        string.Equals(Current, path, StringComparison.OrdinalIgnoreCase) ? "nav__item--active" : string.Empty;
+}
