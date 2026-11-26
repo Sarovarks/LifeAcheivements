@@ -2,8 +2,11 @@
 
 Your real life, scored like a video game. Do things, unlock achievements, earn XP, level up.
 
-**Live:** https://sarovarks.github.io/LifeAcheivements/ (frontend only - the API is not hosted
-yet, so signing in will not work until it is; see [FREE-HOSTING.md](FREE-HOSTING.md))
+**Live:** https://sarovarks.github.io/LifeAcheivements/
+
+Frontend on GitHub Pages, API on Render, PostgreSQL on Neon - all on free tiers. The API
+sleeps after 15 minutes idle, so the first visit after a quiet spell takes about a minute to
+wake. See [FREE-HOSTING.md](FREE-HOSTING.md).
 
 **Phase 1** is accounts, the achievement catalogue, the claim flow, XP and levels, hidden
 achievements, progress tracking, unlock notes, and the mobile-first Blazor PWA that puts a

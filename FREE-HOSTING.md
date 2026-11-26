@@ -22,17 +22,25 @@ accounts and pasting three values.
 
 | Piece | State |
 |---|---|
-| Frontend | **Live** at https://sarovarks.github.io/LifeAcheivements/ |
-| API | Not hosted yet - needs a Render account |
-| Database | Not hosted yet - needs a Neon account |
+| Frontend | **Live** - https://sarovarks.github.io/LifeAcheivements/ |
+| API | **Live** - https://lifeachievements-api.onrender.com |
+| Database | **Live** - Neon, Singapore, free plan |
 
-The frontend loads, routes and deep-links correctly. Signing in fails until the API exists,
-because `appsettings.json` still points at `http://localhost:5100`. Setting the `API_BASE_URL`
-repository variable and re-running the Pages workflow fixes that.
+Verified end to end on the live site: registered an account, claimed Half Marathon, levelled
+1 -> 3, and the hidden First Steps fired. The result is in Neon - 550 XP, 2 unlocks.
 
-One gotcha found while getting this live: GitHub Pages has to be switched on by hand the first
-time (Settings -> Pages -> Source -> "GitHub Actions"). `enablement: true` in the workflow is
-not permitted to do it with the default token.
+### Two things that caught us out
+
+**GitHub Pages has to be enabled by hand the first time**: Settings -> Pages -> Source ->
+"GitHub Actions". The workflow's `enablement: true` is not permitted to do it with the
+default token, and until it is done every run fails at `configure-pages`.
+
+**GitHub Pages sends `Cache-Control: max-age=600` on everything**, including
+`appsettings.json`. The nginx rules in this repository that mark that file no-cache apply to
+the Docker image, not to Pages. So for up to ten minutes after a deploy that changes the API
+address, a browser that visited earlier keeps the old one and the app quietly calls the wrong
+host. A hard reload clears it; otherwise it sorts itself out within ten minutes. Worth
+remembering before assuming a deploy is broken.
 
 ## 1. Database: Neon
 
