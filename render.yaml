@@ -48,3 +48,10 @@ services:
       # Render hands the container a port here; Program.cs reads it and binds to it.
       - key: PORT
         value: 10000
+
+      # Free instances have 512 MB. ASP.NET Core turns on Server GC by default, which keeps
+      # a heap per core and is tuned for machines with room to spare - on a small container
+      # it inflates memory for no benefit at this traffic level. Workstation GC collects
+      # more eagerly and keeps the footprint well inside the limit.
+      - key: DOTNET_gcServer
+        value: 0
