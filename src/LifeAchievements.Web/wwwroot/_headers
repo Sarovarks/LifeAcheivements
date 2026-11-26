@@ -22,3 +22,9 @@
 # Fingerprinted: the name changes whenever the content does, so cache for a year.
 /_framework/*
   Cache-Control: public, max-age=31536000, immutable
+
+# app.css keeps the same name forever, so a cached copy hides every style change until it
+# expires - a chip-layout fix looked like it had not deployed for exactly this reason.
+# no-cache still lets the browser keep it, but it must revalidate, so an edit shows up at once.
+/css/*
+  Cache-Control: no-cache

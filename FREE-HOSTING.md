@@ -36,7 +36,8 @@ Verified end to end on the live site: registered an account, claimed Half Marath
 default token, and until it is done every run fails at `configure-pages`.
 
 **GitHub Pages sends `Cache-Control: max-age=600` on everything**, including
-`appsettings.json`. The nginx rules in this repository that mark that file no-cache apply to
+`appsettings.json` and `css/app.css` - neither of which carries a fingerprint in its name, so
+a cached copy hides the change completely. The nginx rules in this repository that mark that file no-cache apply to
 the Docker image, not to Pages. So for up to ten minutes after a deploy that changes the API
 address, a browser that visited earlier keeps the old one and the app quietly calls the wrong
 host. A hard reload clears it; otherwise it sorts itself out within ten minutes. Worth
