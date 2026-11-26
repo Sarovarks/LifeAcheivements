@@ -1,0 +1,125 @@
+name: Deploy to Azure
+
+# Manual by default. Switch to the push trigger below once a deploy has worked
+# by hand and you are happy for every merge to main to ship.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to deploy (defaults to the commit SHA)'
+        required: false
+        type: string
+  # push:
+  #   branches: [main]
+
+permissions:
+  id-token: write   # for the federated login below
+  contents: read
+
+env:
+  RESOURCE_GROUP: rg-lifeachievements
+  APP_NAME: lifeach
+
+jobs:
+  deploy:
+    name: Build, push and deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Federated credentials - no secrets stored in GitHub. Set AZURE_CLIENT_ID,
+      # AZURE_TENANT_ID and AZURE_SUBSCRIPTION_ID as repository variables, and add a
+      # federated credential on the app registration for this repo. The README has
+      # the az commands.
+      - name: Sign in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Work out the image tag
+        id: meta
+        run: echo "tag=${{ inputs.tag || github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Find the registry
+        id: acr
+        run: |
+          NAME=$(az acr list -g "$RESOURCE_GROUP" --query "[0].name" -o tsv)
+          if [ -z "$NAME" ]; then
+            echo "No container registry in $RESOURCE_GROUP. Deploy infra/main.bicep first." >&2
+            exit 1
+          fi
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "server=$(az acr show -n "$NAME" --query loginServer -o tsv)" >> "$GITHUB_OUTPUT"
+
+      - name: Sign in to the registry
+        run: az acr login --name "${{ steps.acr.outputs.name }}"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/LifeAchievements.Api/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.acr.outputs.server }}/lifeachievements-api:${{ steps.meta.outputs.tag }}
+            ${{ steps.acr.outputs.server }}/lifeachievements-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/LifeAchievements.Web/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.acr.outputs.server }}/lifeachievements-web:${{ steps.meta.outputs.tag }}
+            ${{ steps.acr.outputs.server }}/lifeachievements-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The API applies migrations on startup, so it goes first and has to come back
+      # healthy before the web app is pointed at the new build.
+      - name: Deploy API
+        run: |
+          az containerapp update \
+            --name "${APP_NAME}-api" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "${{ steps.acr.outputs.server }}/lifeachievements-api:${{ steps.meta.outputs.tag }}"
+
+      - name: Wait for the API to report ready
+        run: |
+          FQDN=$(az containerapp show -n "${APP_NAME}-api" -g "$RESOURCE_GROUP" \
+                 --query properties.configuration.ingress.fqdn -o tsv)
+          for i in $(seq 1 30); do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' "https://$FQDN/health/ready" || true)
+            if [ "$CODE" = "200" ]; then
+              echo "API healthy at https://$FQDN"
+              exit 0
+            fi
+            echo "attempt $i: $CODE"
+            sleep 10
+          done
+          echo "API never became ready - not deploying the web app on top of it." >&2
+          exit 1
+
+      - name: Deploy Web
+        run: |
+          az containerapp update \
+            --name "${APP_NAME}-web" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "${{ steps.acr.outputs.server }}/lifeachievements-web:${{ steps.meta.outputs.tag }}"
+
+      - name: Where it landed
+        run: |
+          WEB=$(az containerapp show -n "${APP_NAME}-web" -g "$RESOURCE_GROUP" \
+                --query properties.configuration.ingress.fqdn -o tsv)
+          echo "### Deployed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Web: https://$WEB" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Tag: \`${{ steps.meta.outputs.tag }}\`" >> "$GITHUB_STEP_SUMMARY"

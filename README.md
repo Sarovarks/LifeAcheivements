@@ -9,6 +9,11 @@ trophy screen in front of all of it.
 **Phase 2** is the social half: friends, an activity feed with reactions, friend verification
 of claims, and a weekly leaderboard.
 
+**Phase 3** is shipping it: both apps are containerised, CI runs the tests and builds the
+images on every push, and `infra/main.bicep` describes an Azure Container Apps environment with
+managed PostgreSQL. See [DEPLOYMENT.md](DEPLOYMENT.md). Nothing has actually been deployed -
+that spends money in your subscription.
+
 ---
 
 ## Running it
@@ -79,12 +84,24 @@ reactions and the leaderboard against a real in-memory SQLite database in `Appli
 
 ---
 
+### Everything in containers
+
+The same images that deploy, on your machine - web on 8080, API on 8081:
+
+```powershell
+docker compose -f docker-compose.full.yml up -d --build
+```
+
 ## Solution layout
 
 ```
 LifeAchievements.slnx                     (.NET 10's XML solution format)
-├── docker-compose.yml                    PostgreSQL 17 (reads .env)
+├── docker-compose.yml                    PostgreSQL 17 for development (reads .env)
+├── docker-compose.full.yml               the whole stack in containers
 ├── .env.example                          template for the gitignored .env
+├── DEPLOYMENT.md                         containers, CI and Azure
+├── .github/workflows/                    ci.yml (tests + images), deploy.yml (Azure)
+├── infra/main.bicep                       Container Apps + managed PostgreSQL
 ├── src/
 │   ├── LifeAchievements.Domain           entities, enums, XP/level rules, domain events
 │   ├── LifeAchievements.Application      commands, queries, handlers, validators, dispatcher
