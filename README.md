@@ -102,6 +102,14 @@ The same images that deploy, on your machine - web on 8080, API on 8081:
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
+## Documentation
+
+| | |
+|---|---|
+| [BUILD-LOG.md](BUILD-LOG.md) | What was built, what was decided and why, and every bug found on the way |
+| [FREE-HOSTING.md](FREE-HOSTING.md) | Cloudflare Pages + Render + Neon, and how to set it all up |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Containers, CI and the Azure path |
+
 ## Solution layout
 
 ```
