@@ -57,15 +57,16 @@ public class ClaimAchievementTests
     }
 
     [Fact]
-    public async Task A_repeatable_achievement_is_blocked_while_it_is_cooling_down()
+    public async Task A_repeatable_achievement_is_blocked_for_the_rest_of_its_window()
     {
         await using var h = new ClaimTestHarness();
 
         await h.Claim("EARLY_BIRD");
 
+        // Early Bird is a daily habit, so the rest of the same day is off limits.
         h.Clock.Advance(TimeSpan.FromHours(5));
         var ex = await Assert.ThrowsAsync<DomainException>(() => h.Claim("EARLY_BIRD"));
-        Assert.Contains("cooling down", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("already logged", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

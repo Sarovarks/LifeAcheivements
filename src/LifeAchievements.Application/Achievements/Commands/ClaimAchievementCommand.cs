@@ -56,17 +56,34 @@ public class ClaimAchievementCommandHandler(
             throw new DomainException($"You already unlocked \"{achievement.Name}\". Go find a new one.");
 
         // 3. Repeatables respect their cooldown.
-        if (achievement.IsRepeatable && achievement.CooldownHours is { } cooldown && approved.Count > 0)
+        if (achievement.IsRepeatable && approved.Count > 0)
         {
             var last = approved.Max(ua => ua.ApprovedAt ?? ua.ClaimedAt);
-            var readyAt = last.AddHours(cooldown);
-            if (now < readyAt)
+
+            if (achievement.CooldownWindow != CooldownWindow.None)
             {
-                var wait = readyAt - now;
-                var human = wait.TotalHours >= 1
-                    ? $"{(int)wait.TotalHours}h {wait.Minutes}m"
-                    : $"{Math.Max(1, (int)wait.TotalMinutes)}m";
-                throw new DomainException($"\"{achievement.Name}\" is cooling down. Try again in {human}.");
+                // Calendar-based: a fresh midnight (or Monday) is a fresh claim, however late
+                // you logged the last one. This is what "once per day" actually means, and it
+                // keeps the cooldown in step with how the streak counts days.
+                if (CooldownRules.IsStillCoolingDown(achievement.CooldownWindow, last, now))
+                {
+                    throw new DomainException(
+                        $"You already logged \"{achievement.Name}\" {CooldownRules.Describe(achievement.CooldownWindow)}. " +
+                        CooldownRules.NextTime(achievement.CooldownWindow));
+                }
+            }
+            else if (achievement.CooldownHours is { } cooldown)
+            {
+                // Rolling wait, for the ones where the gap itself is the point.
+                var readyAt = last.AddHours(cooldown);
+                if (now < readyAt)
+                {
+                    var wait = readyAt - now;
+                    var human = wait.TotalHours >= 1
+                        ? $"{(int)wait.TotalHours}h {wait.Minutes}m"
+                        : $"{Math.Max(1, (int)wait.TotalMinutes)}m";
+                    throw new DomainException($"\"{achievement.Name}\" is cooling down. Try again in {human}.");
+                }
             }
         }
 

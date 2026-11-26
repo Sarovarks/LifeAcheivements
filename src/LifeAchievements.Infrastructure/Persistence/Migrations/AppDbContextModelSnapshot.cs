@@ -41,6 +41,11 @@ namespace LifeAchievements.Infrastructure.Persistence.Migrations
                     b.Property<int?>("CooldownHours")
                         .HasColumnType("integer");
 
+                    b.Property<string>("CooldownWindow")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(512)

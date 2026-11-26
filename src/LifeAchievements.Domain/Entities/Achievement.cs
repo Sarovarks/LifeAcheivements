@@ -24,8 +24,17 @@ public class Achievement
 
     public bool IsRepeatable { get; set; }
 
-    /// <summary>Minimum hours between two approved unlocks. Null = no cooldown.</summary>
+    /// <summary>
+    /// Minimum hours between two approved unlocks, measured from the last claim. Only used
+    /// when <see cref="CooldownWindow"/> is None - a rolling wait, not a calendar one.
+    /// </summary>
     public int? CooldownHours { get; set; }
+
+    /// <summary>
+    /// Calendar limit for a repeatable achievement: once per local day or week. Takes
+    /// precedence over CooldownHours, which drifts later with every claim.
+    /// </summary>
+    public CooldownWindow CooldownWindow { get; set; } = CooldownWindow.None;
 
     public VerificationType VerificationType { get; set; }
 

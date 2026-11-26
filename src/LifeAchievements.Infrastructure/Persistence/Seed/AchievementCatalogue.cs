@@ -22,6 +22,7 @@ public static class AchievementCatalogue
         string code, string name, string description, AchievementCategory category,
         AchievementTier tier, int xp, string icon,
         bool repeatable = false, int? cooldownHours = null,
+        CooldownWindow cooldown = CooldownWindow.None,
         VerificationType verification = VerificationType.Self,
         bool hidden = false, string? hint = null,
         int? target = null, string? unit = null,
@@ -38,6 +39,7 @@ public static class AchievementCatalogue
             Icon = icon,
             IsRepeatable = repeatable,
             CooldownHours = cooldownHours,
+            CooldownWindow = cooldown,
             VerificationType = verification,
             IsHidden = hidden,
             Hint = hint,
@@ -51,7 +53,7 @@ public static class AchievementCatalogue
         // ---------------- Health (10) ----------------
         A("EARLY_BIRD", "Early Bird",
             "Woke up before 6 AM and did not immediately go back to sleep. Legendary restraint.",
-            AchievementCategory.Health, AchievementTier.Common, 50, "sunrise", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Health, AchievementTier.Common, 50, "sunrise", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("IRON_WILL", "Iron Will",
             "Hit the gym five days in one week. Your future self is quietly applauding.",
@@ -60,11 +62,11 @@ public static class AchievementCatalogue
 
         A("TEN_K_STEPS", "10K Steps",
             "Walked ten thousand steps in a day. Pacing while on a call absolutely counts.",
-            AchievementCategory.Health, AchievementTier.Common, 40, "footprints", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Health, AchievementTier.Common, 40, "footprints", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("HYDRATION_HERO", "Hydration Hero",
             "Drank enough water that you actually noticed. Your kidneys send their regards.",
-            AchievementCategory.Health, AchievementTier.Common, 30, "droplet", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Health, AchievementTier.Common, 30, "droplet", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("LEG_DAY", "Leg Day Survivor",
             "Did leg day and still managed to walk down the stairs afterwards.",
@@ -81,11 +83,11 @@ public static class AchievementCatalogue
 
         A("SLEEP_CHAMPION", "Sleep Champion",
             "Eight hours of real sleep. Not screen time in bed. Actual, honest sleep.",
-            AchievementCategory.Health, AchievementTier.Common, 35, "moon", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Health, AchievementTier.Common, 35, "moon", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("ICE_BREAKER", "Ice Breaker",
             "Took a cold shower voluntarily, then told everyone you know about it.",
-            AchievementCategory.Health, AchievementTier.Common, 45, "snowflake", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Health, AchievementTier.Common, 45, "snowflake", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("PREVENTIVE_MAINTENANCE", "Preventive Maintenance",
             "Went for a health check-up before anything actually hurt. Very responsible.",
@@ -98,11 +100,11 @@ public static class AchievementCatalogue
 
         A("PAGE_TURNER", "Page Turner",
             "Finished a book. The whole thing. Including the slow bit in the middle.",
-            AchievementCategory.Work, AchievementTier.Rare, 120, "book", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Work, AchievementTier.Rare, 120, "book", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("INBOX_ZERO", "Inbox Zero",
             "Your inbox is empty. It will not last. Savour it while it does.",
-            AchievementCategory.Work, AchievementTier.Common, 60, "inbox", repeatable: true, cooldownHours: 168),
+            AchievementCategory.Work, AchievementTier.Common, 60, "inbox", repeatable: true, cooldown: CooldownWindow.Week),
 
         A("NEW_SKILL", "New Skill Unlocked",
             "Learned something genuinely new and can prove it to a sceptical friend.",
@@ -114,15 +116,15 @@ public static class AchievementCatalogue
 
         A("REVIEW_CRUSADER", "Review Crusader",
             "Reviewed a teammate pull request properly instead of just clicking approve.",
-            AchievementCategory.Work, AchievementTier.Common, 50, "check-square", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Work, AchievementTier.Common, 50, "check-square", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("MEETING_SLAYER", "Meeting Slayer",
             "Declined a meeting that could have been an email. An act of genuine courage.",
-            AchievementCategory.Work, AchievementTier.Common, 40, "calendar-off", repeatable: true, cooldownHours: 168),
+            AchievementCategory.Work, AchievementTier.Common, 40, "calendar-off", repeatable: true, cooldown: CooldownWindow.Week),
 
         A("DEEP_WORK", "Deep Work",
             "Three uninterrupted hours of real focus. Several tabs were harmed.",
-            AchievementCategory.Work, AchievementTier.Common, 70, "target", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Work, AchievementTier.Common, 70, "target", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("LIBRARY_CARD", "Library Card",
             "Twelve books finished in one year. Audiobooks count. Summaries do not.",
@@ -140,7 +142,7 @@ public static class AchievementCatalogue
 
         A("HOME_CHEF", "Home Chef",
             "Cooked instead of ordering in. The delivery app is visibly confused.",
-            AchievementCategory.Fun, AchievementTier.Common, 40, "chef-hat", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Fun, AchievementTier.Common, 40, "chef-hat", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("SOLO_TRIP", "Solo Trip",
             "Travelled alone and came back with stories nobody else can tell.",
@@ -148,7 +150,7 @@ public static class AchievementCatalogue
 
         A("SUNSET_CHASER", "Sunset Chaser",
             "Stopped whatever you were doing to actually watch a sunset. No photo needed.",
-            AchievementCategory.Fun, AchievementTier.Common, 35, "sunset", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Fun, AchievementTier.Common, 35, "sunset", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("CULINARY_EXPLORER", "Culinary Explorer",
             "Tried a cuisine you could not confidently pronounce. Survived. Thrived.",
@@ -168,7 +170,7 @@ public static class AchievementCatalogue
 
         A("TABLETOP_TACTICIAN", "Tabletop Tactician",
             "Hosted a board game night and only mildly bent the rules in your favour.",
-            AchievementCategory.Fun, AchievementTier.Common, 45, "dice", repeatable: true, cooldownHours: 168,
+            AchievementCategory.Fun, AchievementTier.Common, 45, "dice", repeatable: true, cooldown: CooldownWindow.Week,
             verification: VerificationType.Friend),
 
         A("SHUTTERBUG", "Shutterbug",
@@ -183,16 +185,16 @@ public static class AchievementCatalogue
 
         A("RECONNECTED", "Reconnected",
             "Called an old friend out of nowhere. Better still, they picked up.",
-            AchievementCategory.Social, AchievementTier.Common, 60, "phone", repeatable: true, cooldownHours: 168),
+            AchievementCategory.Social, AchievementTier.Common, 60, "phone", repeatable: true, cooldown: CooldownWindow.Week),
 
         A("PARTY_STARTER", "Party Starter",
             "Made the gathering genuinely fun. Somebody said so out loud, unprompted.",
-            AchievementCategory.Social, AchievementTier.Common, 50, "party", repeatable: true, cooldownHours: 168,
+            AchievementCategory.Social, AchievementTier.Common, 50, "party", repeatable: true, cooldown: CooldownWindow.Week,
             verification: VerificationType.Friend),
 
         A("FAMILY_TIME", "Family Time",
             "Spent an evening with family with your phone in an entirely different room.",
-            AchievementCategory.Social, AchievementTier.Common, 45, "home", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Social, AchievementTier.Common, 45, "home", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("SOCIAL_PATCH_NOTES", "Social Patch Notes",
             "Made a real new friend as an adult. Legitimately one of the harder ones.",
@@ -213,7 +215,7 @@ public static class AchievementCatalogue
         // ---------------- Mind / habits (6) ----------------
         A("MONK_MODE", "Monk Mode",
             "Twenty-four hours with no social media. The algorithm misses you terribly.",
-            AchievementCategory.Mind, AchievementTier.Common, 100, "lotus", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Mind, AchievementTier.Common, 100, "lotus", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("DIGITAL_DETOX", "Digital Detox Weekend",
             "A whole weekend offline. Yes, the world kept turning without your input.",
@@ -227,11 +229,11 @@ public static class AchievementCatalogue
 
         A("STILL_MIND", "Still Mind",
             "Ten minutes of meditation without once checking how much was left.",
-            AchievementCategory.Mind, AchievementTier.Common, 35, "brain", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Mind, AchievementTier.Common, 35, "brain", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("DEAR_DIARY", "Dear Diary",
             "Wrote down what actually happened today, honestly, including the awkward part.",
-            AchievementCategory.Mind, AchievementTier.Common, 30, "pen", repeatable: true, cooldownHours: 24),
+            AchievementCategory.Mind, AchievementTier.Common, 30, "pen", repeatable: true, cooldown: CooldownWindow.Day),
 
         A("INNER_WORK", "Inner Work",
             "Talked to a professional about what goes on in your head. Strongest move here.",

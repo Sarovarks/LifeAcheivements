@@ -56,8 +56,12 @@ public class GetAchievementsQueryHandler(IAppDbContext db, ICurrentUser currentU
             var lastUnlockedAt = approved.Count == 0 ? (DateTimeOffset?)null : approved.Max(c => c.ApprovedAt ?? c.ClaimedAt);
 
             DateTimeOffset? claimableAgainAt = null;
-            if (a.IsRepeatable && a.CooldownHours is { } hours && lastUnlockedAt is { } last)
-                claimableAgainAt = last.AddHours(hours);
+            if (a.IsRepeatable && lastUnlockedAt is { } last)
+            {
+                claimableAgainAt = a.CooldownWindow != CooldownWindow.None
+                    ? CooldownRules.NextClaimableAt(a.CooldownWindow, last)
+                    : a.CooldownHours is { } hours ? last.AddHours(hours) : null;
+            }
 
             ProgressDto? progress = null;
             if (a.HasProgress)

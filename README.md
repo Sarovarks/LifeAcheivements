@@ -70,9 +70,9 @@ stays out of the way so you are never served a stale app.)
 dotnet test
 ```
 
-87 tests: the level curve, streak and progress-window rules in `Domain.Tests`, and the claim
-flow, progress tracking and notes against a real in-memory SQLite database in
-`Application.Tests`.
+105 tests: the level curve, streaks, progress windows and cooldown windows in `Domain.Tests`,
+and the claim flow, daily cooldowns, progress tracking and notes against a real in-memory
+SQLite database in `Application.Tests`.
 
 ---
 
@@ -156,6 +156,24 @@ means editing one file; no migration, no backfill.
    hold, through the same ledger.
 7. The response carries old/new level, whether you levelled up, and any hidden achievements the
    claim triggered, so the unlock screen can show the whole payoff at once.
+
+### Repeatables and their cooldowns
+
+22 achievements can be unlocked more than once. How they limit themselves matters more than it
+sounds:
+
+| Limit | Count | Meaning |
+|---|---|---|
+| `CooldownWindow.Day` | 14 | Once per local calendar day - 10K Steps, Hydration Hero, Dear Diary |
+| `CooldownWindow.Week` | 5 | Once per local calendar week, Monday to Sunday - Inbox Zero, Reconnected |
+| `CooldownHours` | 3 | A rolling wait, where the gap itself is the point - Leg Day Survivor (72h) |
+
+The daily ones are calendar-based rather than a rolling 24 hours on purpose. A rolling wait
+measured from the last claim drifts: log 10K Steps at 9pm, walk again at 8am, and a 24-hour
+cooldown still has 13 hours to run even though you genuinely did it on a new day. Worse, it
+disagrees with `StreakCalculator`, which counts distinct local days - so the cooldown could
+block a claim on a day you earned it and silently break the streak. Day and Week windows keep
+the two rules in step.
 
 ### Progress, for the things that take more than a tap
 
