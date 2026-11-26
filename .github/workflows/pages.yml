@@ -16,6 +16,9 @@ on:
       - 'src/LifeAchievements.Web/**'
       - 'src/LifeAchievements.Shared/**'
       - '.github/workflows/pages.yml'
+      # This script rewrites the published service worker manifest, so a change to it
+      # changes the deployed site just as much as a change to the app does.
+      - '.github/scripts/fix_service_worker_integrity.py'
   workflow_dispatch:
 
 permissions:
