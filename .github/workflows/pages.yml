@@ -72,11 +72,13 @@ jobs:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
         run: |
           if [ -z "${API_BASE_URL}" ]; then
-            echo "::warning::API_BASE_URL is not set - the published app will have no API to call."
-          else
-            printf '{\n  "ApiBaseUrl": "%s"\n}\n' "${API_BASE_URL}" > publish/wwwroot/appsettings.json
-            echo "ApiBaseUrl set to ${API_BASE_URL}"
+            echo "::error::API_BASE_URL repository variable is not set."
+            echo "Without it the published app points at http://localhost:5100 - a site that"
+            echo "loads, looks completely fine, and silently cannot sign anyone in. Set it"
+            echo "under Settings -> Secrets and variables -> Actions -> Variables."
+            exit 1
           fi
+          printf '{\n  "ApiBaseUrl": "%s"\n}\n' "${API_BASE_URL}" > publish/wwwroot/appsettings.json
           cat publish/wwwroot/appsettings.json
 
       # index.html and appsettings.json were both edited after publish, so the hashes the
