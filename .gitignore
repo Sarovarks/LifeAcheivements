@@ -2,4 +2,8 @@ bin/
 obj/
 .vs/
 *.user
+
+# Local secrets - never commit these
+.env
 appsettings.Development.local.json
+appsettings.*.Local.json

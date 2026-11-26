@@ -12,16 +12,35 @@ front of all of it. Friends, the feed, verification and leaderboards are Phase 2
 
 You need the **.NET 10 SDK** and **Docker Desktop**.
 
-### 1. Start PostgreSQL
+### 1. Set the local credentials
+
+No credentials are committed to this repository, so a fresh clone needs two one-off steps.
+
+Database credentials for the container come from a `.env` file, which is gitignored:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Open `.env` and pick a password. Then tell the API how to reach that database. The connection
+string lives in [user secrets](https://learn.microsoft.com/aspnet/core/security/app-secrets),
+which are stored in your Windows user profile, not in the repository:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Port=5433;Database=lifeachievements;Username=lifeachievements;Password=<the password from .env>" --project src/LifeAchievements.Api
+```
+
+If you skip this, the API fails at startup with a message telling you exactly this command.
+
+### 2. Start PostgreSQL
 
 ```powershell
 docker compose up -d
 ```
 
 Postgres listens on **localhost:5433** (not 5432, so it will not collide with a local install).
-Credentials are `lifeachievements` / `lifeachievements`, database `lifeachievements`.
 
-### 2. Run the API
+### 3. Run the API
 
 ```powershell
 dotnet run --project src/LifeAchievements.Api
@@ -31,7 +50,7 @@ API on **http://localhost:5100**. On startup it applies EF migrations and syncs 
 catalogue, so a fresh clone needs no manual migration step. OpenAPI is at
 `http://localhost:5100/openapi/v1.json` in Development.
 
-### 3. Run the web app
+### 4. Run the web app
 
 In a second terminal:
 
@@ -60,7 +79,8 @@ a real in-memory SQLite database in `Application.Tests`.
 
 ```
 LifeAchievements.slnx                     (.NET 10's XML solution format)
-├── docker-compose.yml                    PostgreSQL 17
+├── docker-compose.yml                    PostgreSQL 17 (reads .env)
+├── .env.example                          template for the gitignored .env
 ├── src/
 │   ├── LifeAchievements.Domain           entities, enums, XP/level rules, domain events
 │   ├── LifeAchievements.Application      commands, queries, handlers, validators, dispatcher
@@ -185,6 +205,20 @@ The web project is Blazor WebAssembly, so it is worth saying what that means her
   whatever you were on, so closing it puts you back exactly where you were.
 
 ---
+
+## Secrets
+
+Nothing secret is committed. The database password lives in `.env` (gitignored, used by
+docker-compose) and the API's connection string lives in user secrets, keyed by the
+`UserSecretsId` in `LifeAchievements.Api.csproj`. User secrets are loaded automatically in the
+Development environment only; anywhere else the connection string has to come from the host,
+for example the environment variable `ConnectionStrings__Default`.
+
+To see or change what is stored:
+
+```powershell
+dotnet user-secrets list --project src/LifeAchievements.Api
+```
 
 ## What is not here yet
 

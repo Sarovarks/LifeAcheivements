@@ -13,8 +13,14 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        // Kept out of appsettings.json on purpose - locally it lives in user-secrets, and in a
+        // real environment it comes from the host (env var ConnectionStrings__Default).
         var connectionString = configuration.GetConnectionString("Default")
-            ?? throw new InvalidOperationException("ConnectionStrings:Default is not configured.");
+            ?? throw new InvalidOperationException(
+                "No database connection string. Set it with:\n" +
+                "  dotnet user-secrets set \"ConnectionStrings:Default\" \"<connection string>\" " +
+                "--project src/LifeAchievements.Api\n" +
+                "See the README for the value that matches docker-compose.");
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
