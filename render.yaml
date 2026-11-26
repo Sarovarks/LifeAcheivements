@@ -41,9 +41,13 @@ services:
       - key: ConnectionStrings__Default
         sync: false
 
-      # The GitHub Pages origin - scheme and host only, no path and no trailing slash.
+      # Allowed frontend origins - scheme and host only, no path, no trailing slash.
+      # Both are listed while the app moves from GitHub Pages to Cloudflare; drop the
+      # github.io one once nothing points at it any more.
       - key: Cors__AllowedOrigins__0
         value: https://sarovarks.github.io
+      - key: Cors__AllowedOrigins__1
+        value: https://lifeachievements.pages.dev
 
       # Render hands the container a port here; Program.cs reads it and binds to it.
       - key: PORT

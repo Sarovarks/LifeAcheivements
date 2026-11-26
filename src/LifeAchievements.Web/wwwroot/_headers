@@ -1,0 +1,24 @@
+# Cloudflare Pages cache rules.
+#
+# GitHub Pages forces Cache-Control: max-age=600 on everything, which is why a deploy that
+# changed the API address left browsers calling the old one for ten minutes. Here the files
+# that decide which version of the app you get are never cached, and the fingerprinted ones
+# are cached hard.
+
+# Decides which API the app talks to - must never be stale.
+/appsettings.json
+  Cache-Control: no-store
+
+# Decides which build you get.
+/index.html
+  Cache-Control: no-store
+
+/service-worker.js
+  Cache-Control: no-store
+
+/service-worker-assets.js
+  Cache-Control: no-store
+
+# Fingerprinted: the name changes whenever the content does, so cache for a year.
+/_framework/*
+  Cache-Control: public, max-age=31536000, immutable

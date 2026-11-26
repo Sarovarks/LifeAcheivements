@@ -85,7 +85,7 @@ jobs:
       # service worker recorded for them are now wrong. Left alone, the integrity check
       # fails and the app quietly stops being installable while still appearing to work.
       - name: Re-stamp service worker integrity hashes
-        run: python .github/scripts/fix_service_worker_integrity.py publish/wwwroot
+        run: python .github/scripts/fix_service_worker_integrity.py publish/wwwroot --exclude _redirects,_headers
 
       # enablement: true asks the API to switch Pages on. In practice the workflow token was
       # not allowed to do that here, so Pages had to be turned on by hand the first time:

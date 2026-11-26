@@ -42,6 +42,55 @@ address, a browser that visited earlier keeps the old one and the app quietly ca
 host. A hard reload clears it; otherwise it sorts itself out within ten minutes. Worth
 remembering before assuming a deploy is broken.
 
+## Moving the frontend to Cloudflare Pages
+
+GitHub Pages works, but it serves the app from `/LifeAcheivements/` and forces
+`Cache-Control: max-age=600` on everything. Cloudflare Pages gives a root URL and lets the
+cache headers be set properly, which removes three workarounds and one real bug.
+
+### What you do
+
+1. Sign up at [dash.cloudflare.com](https://dash.cloudflare.com) - free, no card.
+2. **Workers & Pages -> Create -> Pages -> Upload assets**, name the project
+   **`lifeachievements`**, and upload anything (a single empty file is fine) just to create
+   it. The GitHub workflow replaces the contents on the first real deploy.
+3. **My Profile -> API Tokens -> Create Token -> Edit Cloudflare Workers** (or a custom token
+   with the *Cloudflare Pages: Edit* permission). Copy it.
+4. Copy your **Account ID** from the right-hand side of any dashboard page.
+5. Add both as repository **secrets** (not variables - these are sensitive) at
+   `Settings -> Secrets and variables -> Actions -> Secrets`:
+
+| Secret | Value |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | the token from step 3 |
+| `CLOUDFLARE_ACCOUNT_ID` | the id from step 4 |
+
+6. **Actions -> Deploy frontend to Cloudflare Pages -> Run workflow.**
+
+The site lands at `https://lifeachievements.pages.dev`.
+
+### What the move fixes
+
+Serving from a root domain rather than a `/repo/` subpath makes three GitHub Pages
+workarounds unnecessary: no `<base href>` rewrite, no `.nojekyll`, no `404.html`. The SPA
+fallback becomes a proper 200 via `wwwroot/_redirects` instead of a 404 whose body happens to
+boot the app.
+
+More importantly, `wwwroot/_headers` marks `appsettings.json`, `index.html` and the service
+worker as `no-store`, so a deploy that changes the API address takes effect immediately
+rather than up to ten minutes later.
+
+One trap worth knowing: Cloudflare treats `_redirects` and `_headers` as build configuration
+and does not serve them. Blazor lists every published file in the service worker manifest, so
+the worker would try to cache two files that return 404, fail its install, and leave the app
+quietly uninstallable. The deploy excludes them from the manifest.
+
+### After it works
+
+`render.yaml` already allows both origins. Once nothing points at the github.io address, drop
+`Cors__AllowedOrigins__0` and leave only the Cloudflare one, and set the GitHub Pages workflow
+to `workflow_dispatch` only so the two do not both deploy on every push.
+
 ## 1. Database: Neon
 
 1. Sign up at [neon.tech](https://neon.tech) with your GitHub account.

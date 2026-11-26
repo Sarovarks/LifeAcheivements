@@ -1,0 +1,6 @@
+# Cloudflare Pages SPA fallback.
+#
+# Anything that is not a real file is served index.html with a 200, so a deep link like
+# /friends reaches the Blazor router. GitHub Pages could only do this through a 404.html
+# served with a 404 status - this is the same trick without the lie about the status code.
+/*    /index.html   200

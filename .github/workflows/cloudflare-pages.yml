@@ -1,0 +1,80 @@
+name: Deploy frontend to Cloudflare Pages
+
+# Cloudflare's own build system has no .NET SDK, so the app is built here on a GitHub runner
+# and only the finished static files are handed to Cloudflare.
+#
+# Serving from a root domain rather than a /repo/ subpath means none of the GitHub Pages
+# workarounds are needed: no <base href> rewrite, no .nojekyll, no 404.html. The SPA fallback
+# and the cache rules live in wwwroot/_redirects and wwwroot/_headers instead.
+#
+# Before the first run, add two repository secrets:
+#   CLOUDFLARE_API_TOKEN   - a token with the "Cloudflare Pages: Edit" permission
+#   CLOUDFLARE_ACCOUNT_ID  - from the right-hand side of any Cloudflare dashboard page
+# and keep the API_BASE_URL variable that the GitHub Pages workflow already uses.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/LifeAchievements.Web/**'
+      - 'src/LifeAchievements.Shared/**'
+      - '.github/workflows/cloudflare-pages.yml'
+      - '.github/scripts/fix_service_worker_integrity.py'
+  workflow_dispatch:
+
+concurrency:
+  group: cloudflare-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish
+        run: dotnet publish src/LifeAchievements.Web/LifeAchievements.Web.csproj -c Release -o publish
+
+      - name: Point the app at the API
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          if [ -z "${API_BASE_URL}" ]; then
+            echo "::error::API_BASE_URL repository variable is not set."
+            echo "Without it the published app points at http://localhost:5100 - a site that"
+            echo "loads, looks completely fine, and silently cannot sign anyone in."
+            exit 1
+          fi
+          printf '{\n  "ApiBaseUrl": "%s"\n}\n' "${API_BASE_URL}" > publish/wwwroot/appsettings.json
+          cat publish/wwwroot/appsettings.json
+
+      # appsettings.json was rewritten after publish, so the hash the service worker recorded
+      # for it is stale. Left alone the integrity check fails and the app quietly stops being
+      # installable while still appearing to work.
+      - name: Re-stamp service worker integrity hashes
+        run: python .github/scripts/fix_service_worker_integrity.py publish/wwwroot --exclude _redirects,_headers
+
+      - name: Check the Cloudflare routing files survived publish
+        run: |
+          for f in _redirects _headers; do
+            if [ ! -f "publish/wwwroot/$f" ]; then
+              echo "::error::publish/wwwroot/$f is missing - deep links or caching would break."
+              exit 1
+            fi
+            echo "--- $f ---"
+            cat "publish/wwwroot/$f"
+          done
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy publish/wwwroot --project-name=lifeachievements --branch=main

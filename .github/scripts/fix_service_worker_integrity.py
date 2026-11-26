@@ -10,7 +10,11 @@ That leaves the recorded hashes stale, the service worker fails its integrity ch
 app silently stops being installable as a PWA while still appearing to work. Recomputing the
 hashes here keeps the manifest honest.
 
-Usage:  python fix_service_worker_integrity.py <wwwroot>
+It can also drop entries entirely. Cloudflare Pages treats _redirects and _headers as build
+configuration and does not serve them, so a service worker that tries to cache them fails its
+install and the app stops being installable - while still looking perfectly fine.
+
+Usage:  python fix_service_worker_integrity.py <wwwroot> [--exclude a,b,c]
 """
 
 import base64
@@ -22,11 +26,17 @@ import sys
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         print(__doc__.strip(), file=sys.stderr)
         return 2
 
     root = pathlib.Path(sys.argv[1])
+
+    excluded = set()
+    if "--exclude" in sys.argv:
+        raw = sys.argv[sys.argv.index("--exclude") + 1]
+        excluded = {name.strip() for name in raw.split(",") if name.strip()}
+
     manifest_path = root / "service-worker-assets.js"
 
     if not manifest_path.exists():
@@ -45,8 +55,18 @@ def main() -> int:
 
     updated = 0
     missing = 0
+    dropped = 0
+
+    kept = []
 
     for asset in manifest.get("assets", []):
+        if asset["url"] in excluded:
+            print(f"  dropped {asset['url']} (not served by the host)")
+            dropped += 1
+            continue
+        kept.append(asset)
+
+    for asset in kept:
         target = root / asset["url"]
         if not target.exists():
             missing += 1
@@ -60,12 +80,17 @@ def main() -> int:
             asset["hash"] = fresh
             updated += 1
 
+    manifest["assets"] = kept
+
     manifest_path.write_text(
         match.group("prefix") + json.dumps(manifest) + match.group("suffix"),
         encoding="utf-8",
     )
 
-    print(f"service worker: {updated} hash(es) re-stamped, {missing} file(s) listed but absent")
+    print(
+        f"service worker: {updated} hash(es) re-stamped, {dropped} entry(ies) dropped, "
+        f"{missing} file(s) listed but absent"
+    )
     return 0
 
 
