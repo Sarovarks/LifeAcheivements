@@ -24,7 +24,24 @@ async function onInstall(event) {
         .filter(asset => offlineAssetsInclude.some(pattern => pattern.test(asset.url)))
         .filter(asset => !offlineAssetsExclude.some(pattern => pattern.test(asset.url)))
         .map(asset => new Request(asset.url, { integrity: asset.hash, cache: 'no-cache' }));
-    await caches.open(cacheName).then(cache => cache.addAll(assetsRequests));
+
+    const cache = await caches.open(cacheName);
+
+    // Deliberately not cache.addAll: that rejects the whole install if a single asset fails
+    // its integrity check, so the new worker never activates and the previous one keeps
+    // serving its old cache forever. Caching individually means one bad asset costs offline
+    // support for that file alone, instead of wedging every visitor on a stale build.
+    const results = await Promise.allSettled(
+        assetsRequests.map(request => cache.add(request)));
+
+    const failed = results.filter(r => r.status === 'rejected');
+    if (failed.length > 0) {
+        console.warn(`Service worker: ${failed.length} asset(s) could not be cached.`, failed[0].reason);
+    }
+
+    // Take over straight away rather than waiting for every tab of the site to be closed.
+    // Without this a deploy can sit unused for days while the old worker serves stale files.
+    await self.skipWaiting();
 }
 
 async function onActivate(event) {
@@ -35,6 +52,9 @@ async function onActivate(event) {
     await Promise.all(cacheKeys
         .filter(key => key.startsWith(cacheNamePrefix) && key !== cacheName)
         .map(key => caches.delete(key)));
+
+    // Control pages that were already open, so the new build is in charge immediately.
+    await self.clients.claim();
 }
 
 async function onFetch(event) {
