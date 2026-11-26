@@ -78,3 +78,26 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy publish/wwwroot --project-name=lifeachievements --branch=main
+
+      # The deploy step succeeds once Cloudflare accepts the upload, which says nothing about
+      # what the live site actually serves. Check it, rather than assume.
+      - name: Verify the deployed site
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          SITE_URL: https://lifeachievements.pages.dev
+        run: |
+          for attempt in $(seq 1 12); do
+            CONFIG=$(curl -fsS "${SITE_URL}/appsettings.json" 2>/dev/null || true)
+            if echo "${CONFIG}" | grep -qF "${API_BASE_URL}"; then
+              echo "Live site points at ${API_BASE_URL}"
+              echo "  ${SITE_URL}" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "attempt ${attempt}: not live yet"
+            sleep 10
+          done
+          echo "::error::${SITE_URL}/appsettings.json does not contain ${API_BASE_URL}."
+          echo "If the deploy landed as a preview rather than production, the production"
+          echo "branch of the Pages project is not 'main' - change it, or change --branch."
+          echo "Last response: ${CONFIG}"
+          exit 1
