@@ -339,15 +339,15 @@ button:disabled { cursor: not-allowed; }
 
 /* --------------------------------------------------------------- chips -- */
 
+/* Six categories do not fit on one phone row. They used to scroll sideways, which hid the
+   last one entirely - so selecting "Mind" turned a chip gold off-screen where nobody could
+   see it. Wrapping shows every category at once and removes the hidden-state problem. */
 .chips {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    overflow-x: auto;
     padding: 2px 0 4px;
-    scrollbar-width: none;
 }
-
-.chips::-webkit-scrollbar { display: none; }
 
 .chip {
     border-radius: var(--radius-pill);
