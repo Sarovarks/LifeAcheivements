@@ -639,3 +639,213 @@ button:disabled { cursor: not-allowed; }
     font-style: italic;
     opacity: 0.85;
 }
+
+/* ======================================================= Phase 2: social == */
+
+/* --------------------------------------------------------------- podium -- */
+
+.podium {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr;
+    align-items: end;
+    gap: 9px;
+    margin-top: 16px;
+}
+
+.podium__slot { text-align: center; }
+
+.podium__avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 2px solid var(--border);
+    display: grid;
+    place-items: center;
+    margin: 0 auto 7px;
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--muted);
+}
+
+.podium__slot--first .podium__avatar {
+    width: 62px;
+    height: 62px;
+    border-color: var(--gold);
+    color: var(--gold);
+    font-size: 1.3rem;
+}
+
+.podium__name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.podium__xp { font-size: 0.72rem; color: var(--gold); font-weight: 700; margin-top: 2px; }
+
+.podium__block {
+    margin-top: 8px;
+    border-radius: 12px 12px 0 0;
+    background: var(--surface-2);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-head);
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.podium__slot--first .podium__block { height: 68px; background: var(--gold); color: var(--gold-ink); }
+.podium__slot--second .podium__block { height: 50px; }
+.podium__slot--third .podium__block { height: 38px; }
+
+/* ------------------------------------------------------------ rank rows -- */
+
+.rank {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 13px;
+    border-radius: var(--radius-tile);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+}
+
+.rank--me { border-color: var(--gold); }
+
+.rank__number {
+    width: 26px;
+    font-family: var(--font-head);
+    font-weight: 700;
+    color: var(--muted);
+    text-align: center;
+}
+
+.rank--me .rank__number { color: var(--gold); }
+.rank__body { flex: 1; min-width: 0; }
+.rank__name { font-weight: 600; font-size: 0.92rem; }
+.rank__meta { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.rank__xp { color: var(--gold); font-weight: 700; font-size: 0.9rem; white-space: nowrap; }
+
+/* ----------------------------------------------------------------- feed -- */
+
+.feed-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-tile);
+    padding: 14px;
+    margin-bottom: 10px;
+}
+
+.feed-item__head { display: flex; align-items: center; gap: 12px; }
+.feed-item__who { flex: 1; min-width: 0; }
+.feed-item__name { font-weight: 600; font-size: 0.92rem; }
+.feed-item__name span { color: var(--muted); font-weight: 400; }
+.feed-item__time { font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
+
+.feed-item__actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 11px;
+    border-top: 1px solid var(--border);
+}
+
+.react {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.react:active:not(:disabled) { transform: scale(0.97); }
+.react--on { color: var(--gold); border-color: var(--gold); }
+.react--respect.react--on { color: var(--teal); border-color: var(--teal); }
+.react:disabled { opacity: 0.45; }
+
+/* --------------------------------------------------------------- verify -- */
+
+.verify {
+    background: var(--surface);
+    border: 1px solid var(--gold);
+    border-radius: var(--radius-tile);
+    padding: 14px;
+    margin-bottom: 10px;
+}
+
+.verify__actions { display: flex; gap: 9px; margin-top: 12px; }
+
+.verify__actions .btn { min-height: 46px; font-size: 0.9rem; }
+
+/* ------------------------------------------------------------- add form -- */
+
+.add-friend { display: flex; gap: 8px; margin-top: 14px; }
+
+.add-friend input {
+    flex: 1;
+    min-height: 48px;
+    padding: 0 15px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    color: var(--text);
+    font-size: 0.92rem;
+    font-family: var(--font-body);
+    min-width: 0;
+}
+
+.add-friend input:focus { outline: none; border-color: var(--gold); }
+
+.add-friend button {
+    min-height: 48px;
+    padding: 0 18px;
+    border-radius: 15px;
+    background: var(--gold);
+    color: var(--gold-ink);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.add-friend button:disabled { opacity: 0.55; }
+
+.tabs { display: flex; gap: 8px; margin-top: 16px; }
+
+.tab {
+    flex: 1;
+    min-height: 44px;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.tab--active { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); }
+
+.badge-count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--gold);
+    color: var(--gold-ink);
+    font-size: 0.68rem;
+    font-weight: 700;
+    margin-left: 5px;
+}
+
+.tab--active .badge-count { background: var(--gold-ink); color: var(--gold); }

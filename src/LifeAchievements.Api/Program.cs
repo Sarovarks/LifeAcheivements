@@ -50,6 +50,7 @@ app.MapGroup("/auth").MapIdentityApi<AppUser>().WithTags("Auth");
 app.MapAuthExtras();
 app.MapMeEndpoints();
 app.MapAchievementEndpoints();
+app.MapFriendEndpoints();
 
 // Migrate and sync the achievement catalogue on startup so a fresh clone just works.
 await using (var scope = app.Services.CreateAsyncScope())

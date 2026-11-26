@@ -2,9 +2,12 @@
 
 Your real life, scored like a video game. Do things, unlock achievements, earn XP, level up.
 
-This repository is **Phase 1**: accounts, the achievement catalogue, the claim flow, XP and
-levels, hidden achievements, and the mobile-first Blazor PWA that puts a trophy screen in
-front of all of it. Friends, the feed, verification and leaderboards are Phase 2.
+**Phase 1** is accounts, the achievement catalogue, the claim flow, XP and levels, hidden
+achievements, progress tracking, unlock notes, and the mobile-first Blazor PWA that puts a
+trophy screen in front of all of it.
+
+**Phase 2** is the social half: friends, an activity feed with reactions, friend verification
+of claims, and a weekly leaderboard.
 
 ---
 
@@ -70,9 +73,9 @@ stays out of the way so you are never served a stale app.)
 dotnet test
 ```
 
-105 tests: the level curve, streaks, progress windows and cooldown windows in `Domain.Tests`,
-and the claim flow, daily cooldowns, progress tracking and notes against a real in-memory
-SQLite database in `Application.Tests`.
+139 tests: the level curve, streaks, progress windows and cooldown windows in `Domain.Tests`,
+and the claim flow, daily cooldowns, progress, notes, friendships, verification, the feed,
+reactions and the leaderboard against a real in-memory SQLite database in `Application.Tests`.
 
 ---
 
@@ -113,6 +116,15 @@ swap Postgres for SQLite without touching a single handler.
 | `POST` | `/achievements/{id}/progress` | Log a step towards a multi-step achievement |
 | `PUT` | `/me/unlocks/{id}/note` | Attach a line about what actually happened |
 | `GET` | `/me/unlocks?take=10` | Recent approved unlocks, newest first |
+| `GET` | `/friends` | Friends, plus requests waiting on either side |
+| `POST` | `/friends/requests` | Add a friend by their exact email |
+| `POST` | `/friends/requests/{id}` | Accept or decline a request |
+| `DELETE` | `/friends/{userId}` | Remove a friend |
+| `GET` | `/friends/leaderboard` | XP earned since Monday, you and your friends |
+| `GET` | `/feed?take=30` | Recent unlocks from you and your friends |
+| `POST` | `/feed/{id}/reactions` | Cheer or Respect an unlock (toggles) |
+| `GET` | `/verifications` | Friends' claims waiting for somebody to vouch |
+| `POST` | `/verifications/{id}` | Vouch for a friend's claim, or turn it down |
 
 Everything except the auth routes needs `Authorization: Bearer <token>`.
 

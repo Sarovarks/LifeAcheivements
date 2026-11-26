@@ -1,5 +1,6 @@
 @page "/friends"
 @attribute [Authorize]
+@inject GameApiClient Api
 
 <PageTitle>Friends</PageTitle>
 
@@ -7,20 +8,441 @@
     <header class="topbar">
         <div>
             <h1 class="topbar__name">Friends</h1>
-            <div class="topbar__greeting">Coming in Phase 2</div>
+            <div class="topbar__greeting">@Subtitle</div>
         </div>
     </header>
 
-    <div class="card" style="margin-top:16px;text-align:center">
-        <div class="icon-square" style="margin:6px auto 14px">
-            <Icon Name="friends" Size="24" />
-        </div>
-        <h2 style="font-size:1.1rem">Nobody here yet</h2>
-        <p class="muted" style="font-size:0.88rem;margin:8px 0 0">
-            The weekly podium, the activity feed and friend verification all land in Phase 2.
-            Until then, your friend-verified claims sit patiently as Pending.
-        </p>
+    <div class="tabs">
+        <button class="tab @(_tab == Tab.Feed ? "tab--active" : "")" @onclick="() => _tab = Tab.Feed">
+            Feed
+        </button>
+        <button class="tab @(_tab == Tab.Leaderboard ? "tab--active" : "")" @onclick="() => _tab = Tab.Leaderboard">
+            This week
+        </button>
+        <button class="tab @(_tab == Tab.People ? "tab--active" : "")" @onclick="() => _tab = Tab.People">
+            People
+            @if (PendingCount > 0)
+            {
+                <span class="badge-count">@PendingCount</span>
+            }
+        </button>
     </div>
+
+    @if (_error is not null)
+    {
+        <div class="form-error" style="margin-top:14px">@_error</div>
+    }
+    @if (_message is not null)
+    {
+        <div class="empty" style="margin-top:14px;border-style:solid;color:var(--teal)">@_message</div>
+    }
+
+    @if (_loading)
+    {
+        <div class="spinner"></div>
+    }
+    else
+    {
+        @switch (_tab)
+        {
+            case Tab.Feed:
+                @* Things waiting on you come first - they are the only part with a deadline. *@
+                @if (_verifications.Count > 0)
+                {
+                    <h2 class="section-title">Waiting on you</h2>
+                    @foreach (var v in _verifications)
+                    {
+                        <div class="verify">
+                            <div class="feed-item__head">
+                                <div class="icon-square"><Icon Name="@v.Icon" /></div>
+                                <div class="feed-item__who">
+                                    <div class="feed-item__name">
+                                        @v.DisplayName <span>says they unlocked</span>
+                                    </div>
+                                    <div class="feed-item__time">@v.AchievementName &middot; @Ago(v.ClaimedAt)</div>
+                                </div>
+                                <span class="xp-gain">+@v.XpReward</span>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(v.Note))
+                            {
+                                <div class="row__note" style="margin-top:10px">@v.Note</div>
+                            }
+                            <div class="verify__actions">
+                                <button class="btn btn--gold" disabled="@(_busyId == v.UserAchievementId)"
+                                        @onclick="() => Verify(v, true)">
+                                    Confirm
+                                </button>
+                                <button class="btn btn--ghost" disabled="@(_busyId == v.UserAchievementId)"
+                                        @onclick="() => Verify(v, false)">
+                                    Nope
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    <h2 class="section-title">Activity</h2>
+                }
+
+                @if (_feed.Count == 0)
+                {
+                    <div class="empty" style="margin-top:16px">
+                        Nothing here yet. Unlock something, or add a friend on the People tab.
+                    </div>
+                }
+                else
+                {
+                    @foreach (var item in _feed)
+                    {
+                        <div class="feed-item">
+                            <div class="feed-item__head">
+                                <div class="icon-square"><Icon Name="@item.Icon" /></div>
+                                <div class="feed-item__who">
+                                    <div class="feed-item__name">
+                                        @(item.IsMine ? "You" : item.DisplayName) <span>unlocked</span> @item.AchievementName
+                                    </div>
+                                    <div class="feed-item__time">@Ago(item.UnlockedAt) &middot; @item.Tier</div>
+                                </div>
+                                <span class="xp-gain">+@item.XpGained</span>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(item.Note))
+                            {
+                                <div class="row__note" style="margin-top:10px">@item.Note</div>
+                            }
+
+                            <div class="feed-item__actions">
+                                <button class="react @(item.ICheered ? "react--on" : "")"
+                                        disabled="@(_busyId == item.UserAchievementId)"
+                                        @onclick="() => Cheer(item)">
+                                    <Icon Name="party" Size="16" /> Cheer @(item.Cheers > 0 ? item.Cheers.ToString() : "")
+                                </button>
+                                <button class="react react--respect @(item.IRespected ? "react--on" : "")"
+                                        disabled="@(_busyId == item.UserAchievementId)"
+                                        @onclick="() => Respect(item)">
+                                    <Icon Name="hand-heart" Size="16" /> Respect @(item.Respects > 0 ? item.Respects.ToString() : "")
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+                break;
+
+            case Tab.Leaderboard:
+                @if (_board is null || _board.Entries.Count <= 1)
+                {
+                    <div class="empty" style="margin-top:16px">
+                        A leaderboard of one is just a mirror. Add a friend to make it a race.
+                    </div>
+                }
+                @if (_board is { } board)
+                {
+                    @if (board.Podium.Count >= 3)
+                    {
+                        <div class="podium">
+                            @RenderPodiumSlot(board.Podium[1], "second")
+                            @RenderPodiumSlot(board.Podium[0], "first")
+                            @RenderPodiumSlot(board.Podium[2], "third")
+                        </div>
+                    }
+
+                    <h2 class="section-title">
+                        XP since Monday
+                    </h2>
+                    @foreach (var entry in board.Entries)
+                    {
+                        <div class="rank @(entry.IsMe ? "rank--me" : "")">
+                            <div class="rank__number">@entry.Rank</div>
+                            <div class="rank__body">
+                                <div class="rank__name">@(entry.IsMe ? "You" : entry.DisplayName)</div>
+                                <div class="rank__meta">
+                                    Level @entry.Level &middot; @entry.LevelTitle &middot; @entry.UnlocksThisWeek unlocked
+                                </div>
+                            </div>
+                            <div class="rank__xp">@entry.XpThisWeek XP</div>
+                        </div>
+                    }
+                }
+                break;
+
+            case Tab.People:
+                <div class="add-friend">
+                    <input type="email" placeholder="friend@example.com" @bind="_email" @bind:event="oninput" />
+                    <button disabled="@(_adding || string.IsNullOrWhiteSpace(_email))" @onclick="AddFriend">
+                        @(_adding ? "..." : "Add")
+                    </button>
+                </div>
+
+                @if (_requests.Count > 0)
+                {
+                    <h2 class="section-title">Requests</h2>
+                    @foreach (var request in _requests)
+                    {
+                        <div class="row">
+                            <div class="icon-square"><Icon Name="profile" /></div>
+                            <div class="row__body">
+                                <div class="row__name">@request.DisplayName</div>
+                                <div class="row__meta">
+                                    Level @request.Level &middot;
+                                    @(request.Direction == RequestDirections.Incoming ? "wants to be friends" : "waiting for them")
+                                </div>
+                            </div>
+                            @if (request.Direction == RequestDirections.Incoming)
+                            {
+                                <div style="display:flex;gap:7px">
+                                    <button class="pill pill--gold" disabled="@(_busyId == request.FriendshipId)"
+                                            @onclick="() => Respond(request, true)">Yes</button>
+                                    <button class="pill pill--ghost" disabled="@(_busyId == request.FriendshipId)"
+                                            @onclick="() => Respond(request, false)">No</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="pill pill--ghost">Sent</span>
+                            }
+                        </div>
+                    }
+                }
+
+                <h2 class="section-title">Friends</h2>
+                @if (_friends.Count == 0)
+                {
+                    <div class="empty">
+                        Nobody yet. Add someone by the email they signed up with.
+                    </div>
+                }
+                else
+                {
+                    @foreach (var friend in _friends)
+                    {
+                        <div class="row">
+                            <div class="icon-square"><Icon Name="profile" /></div>
+                            <div class="row__body">
+                                <div class="row__name">@friend.DisplayName</div>
+                                <div class="row__meta">
+                                    Level @friend.Level &middot; @friend.LevelTitle &middot; @friend.DayStreak day streak
+                                </div>
+                            </div>
+                            <span class="xp-gain">@friend.TotalXp.ToString("N0")</span>
+                        </div>
+                    }
+                }
+                break;
+        }
+    }
 </div>
 
 <BottomNav />
+
+@code {
+    private enum Tab { Feed, Leaderboard, People }
+
+    private Tab _tab = Tab.Feed;
+    private bool _loading = true;
+    private bool _adding;
+    private string? _error;
+    private string? _message;
+    private Guid? _busyId;
+    private string _email = string.Empty;
+
+    private List<FeedItemDto> _feed = [];
+    private List<PendingVerificationDto> _verifications = [];
+    private List<FriendDto> _friends = [];
+    private List<FriendRequestDto> _requests = [];
+    private WeeklyLeaderboardDto? _board;
+
+    private int PendingCount => _requests.Count(r => r.Direction == RequestDirections.Incoming);
+
+    private string Subtitle => _friends.Count switch
+    {
+        0 => "Nobody here yet",
+        1 => "1 friend",
+        var n => $"{n} friends"
+    };
+
+    protected override Task OnInitializedAsync() => Load();
+
+    private async Task Load()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            var overview = await Api.GetFriendsAsync();
+            _friends = overview.Friends.ToList();
+            _requests = overview.Requests.ToList();
+
+            _feed = await Api.GetFeedAsync();
+            _verifications = await Api.GetPendingVerificationsAsync();
+            _board = await Api.GetLeaderboardAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Could not reach the server. Is the API running?";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AddFriend()
+    {
+        _adding = true;
+        _error = null;
+        _message = null;
+
+        try
+        {
+            await Api.SendFriendRequestAsync(_email.Trim());
+            _message = $"Request sent to {_email.Trim()}.";
+            _email = string.Empty;
+            await Load();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Could not reach the server. Is the API running?";
+        }
+        finally
+        {
+            _adding = false;
+        }
+    }
+
+    private async Task Respond(FriendRequestDto request, bool accept)
+    {
+        _busyId = request.FriendshipId;
+        _error = null;
+
+        try
+        {
+            await Api.RespondToFriendRequestAsync(request.FriendshipId, accept);
+            await Load();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = ex is ApiException ? ex.Message : "Could not reach the server.";
+        }
+        finally
+        {
+            _busyId = null;
+        }
+    }
+
+    private async Task Verify(PendingVerificationDto claim, bool approve)
+    {
+        _busyId = claim.UserAchievementId;
+        _error = null;
+        _message = null;
+
+        try
+        {
+            var result = await Api.VerifyClaimAsync(claim.UserAchievementId, approve);
+            _message = approve
+                ? $"Confirmed. {result.DisplayName} gets {result.XpAwarded} XP."
+                : $"Turned down {result.DisplayName}'s claim.";
+            await Load();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = ex is ApiException ? ex.Message : "Could not reach the server.";
+        }
+        finally
+        {
+            _busyId = null;
+        }
+    }
+
+    private Task Cheer(FeedItemDto item) => React(item, "Cheer");
+
+    private Task Respect(FeedItemDto item) => React(item, "Respect");
+
+    private async Task React(FeedItemDto item, string type)
+    {
+        _busyId = item.UserAchievementId;
+        _error = null;
+
+        try
+        {
+            var result = await Api.ToggleReactionAsync(item.UserAchievementId, type);
+
+            // Patch the row in place rather than reloading the whole feed, so the list does
+            // not jump around under the thumb that just tapped it.
+            var index = _feed.FindIndex(f => f.UserAchievementId == item.UserAchievementId);
+            if (index >= 0)
+            {
+                _feed[index] = _feed[index] with
+                {
+                    Cheers = result.Cheers,
+                    Respects = result.Respects,
+                    ICheered = result.ICheered,
+                    IRespected = result.IRespected
+                };
+            }
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = ex is ApiException ? ex.Message : "Could not reach the server.";
+        }
+        finally
+        {
+            _busyId = null;
+        }
+    }
+
+    private RenderFragment RenderPodiumSlot(LeaderboardEntryDto entry, string place) => builder =>
+    {
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", $"podium__slot podium__slot--{place}");
+
+        builder.OpenElement(2, "div");
+        builder.AddAttribute(3, "class", "podium__avatar");
+        builder.AddContent(4, Initials(entry.DisplayName));
+        builder.CloseElement();
+
+        builder.OpenElement(5, "div");
+        builder.AddAttribute(6, "class", "podium__name");
+        builder.AddContent(7, entry.IsMe ? "You" : entry.DisplayName);
+        builder.CloseElement();
+
+        builder.OpenElement(8, "div");
+        builder.AddAttribute(9, "class", "podium__xp");
+        builder.AddContent(10, $"{entry.XpThisWeek} XP");
+        builder.CloseElement();
+
+        builder.OpenElement(11, "div");
+        builder.AddAttribute(12, "class", "podium__block");
+        builder.AddContent(13, entry.Rank);
+        builder.CloseElement();
+
+        builder.CloseElement();
+    };
+
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length switch
+        {
+            0 => "?",
+            1 => parts[0][..1].ToUpperInvariant(),
+            _ => (parts[0][..1] + parts[^1][..1]).ToUpperInvariant()
+        };
+    }
+
+    private static string Ago(DateTimeOffset at)
+    {
+        var span = DateTimeOffset.Now - at;
+        if (span.TotalMinutes < 1) return "just now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+        return at.ToLocalTime().ToString("d MMM");
+    }
+}

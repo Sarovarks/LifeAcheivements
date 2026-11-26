@@ -215,6 +215,71 @@ namespace LifeAchievements.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("LifeAchievements.Domain.Entities.Friendship", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AddresseeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RequesterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("RespondedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddresseeId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("RequesterId", "AddresseeId")
+                        .IsUnique();
+
+                    b.ToTable("friendships", (string)null);
+                });
+
+            modelBuilder.Entity("LifeAchievements.Domain.Entities.Reaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("UserAchievementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserAchievementId", "UserId", "Type")
+                        .IsUnique();
+
+                    b.ToTable("reactions", (string)null);
+                });
+
             modelBuilder.Entity("LifeAchievements.Domain.Entities.UserAchievement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -431,6 +496,38 @@ namespace LifeAchievements.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Achievement");
+                });
+
+            modelBuilder.Entity("LifeAchievements.Domain.Entities.Friendship", b =>
+                {
+                    b.HasOne("LifeAchievements.Domain.Entities.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("AddresseeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LifeAchievements.Domain.Entities.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("RequesterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LifeAchievements.Domain.Entities.Reaction", b =>
+                {
+                    b.HasOne("LifeAchievements.Domain.Entities.UserAchievement", "UserAchievement")
+                        .WithMany()
+                        .HasForeignKey("UserAchievementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LifeAchievements.Domain.Entities.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("UserAchievement");
                 });
 
             modelBuilder.Entity("LifeAchievements.Domain.Entities.UserAchievement", b =>

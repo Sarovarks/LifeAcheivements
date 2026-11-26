@@ -2,6 +2,7 @@ using LifeAchievements.Application.Abstractions;
 using LifeAchievements.Application.Achievements.Commands;
 using LifeAchievements.Application.Events;
 using LifeAchievements.Domain.Entities;
+using LifeAchievements.Domain.Enums;
 using LifeAchievements.Domain.Events;
 using LifeAchievements.Infrastructure.Persistence;
 using LifeAchievements.Infrastructure.Persistence.Seed;
@@ -44,7 +45,9 @@ public sealed class ClaimTestHarness : IAsyncDisposable
             Id = UserId,
             DisplayName = "Test Player",
             Email = "player@example.com",
+            NormalizedEmail = "PLAYER@EXAMPLE.COM",
             UserName = "player@example.com",
+            NormalizedUserName = "PLAYER@EXAMPLE.COM",
             TotalXp = 0,
             CreatedAt = Clock.Now
         });
@@ -53,8 +56,53 @@ public sealed class ClaimTestHarness : IAsyncDisposable
         Db.ChangeTracker.Clear();
     }
 
+    /// <summary>The same approval pipeline the API wires up, with the hidden rules attached.</summary>
+    public Achievements.IUnlockService Unlocks() =>
+        new Achievements.UnlockService(Db, new TestEventDispatcher(new HiddenAchievementRulesHandler(Db)));
+
     public ClaimAchievementCommandHandler Handler() =>
-        new(Db, new TestCurrentUser(UserId), Clock, new TestEventDispatcher(new HiddenAchievementRulesHandler(Db)));
+        new(Db, new TestCurrentUser(UserId), Clock, Unlocks());
+
+    public ClaimAchievementCommandHandler HandlerFor(Guid userId) =>
+        new(Db, new TestCurrentUser(userId), Clock, Unlocks());
+
+    /// <summary>Adds a second player, for the friends, feed and verification tests.</summary>
+    public Guid AddUser(string displayName, string email, int totalXp = 0)
+    {
+        var id = Guid.NewGuid();
+        Db.Users.Add(new AppUser
+        {
+            Id = id,
+            DisplayName = displayName,
+            Email = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            UserName = email,
+            NormalizedUserName = email.ToUpperInvariant(),
+            TotalXp = totalXp,
+            CreatedAt = Clock.Now
+        });
+        Db.SaveChanges();
+        Db.ChangeTracker.Clear();
+        return id;
+    }
+
+    /// <summary>Makes two people friends outright, skipping the request dance.</summary>
+    public void MakeFriends(Guid a, Guid b)
+    {
+        Db.Friendships.Add(new Friendship
+        {
+            RequesterId = a,
+            AddresseeId = b,
+            Status = FriendshipStatus.Accepted,
+            CreatedAt = Clock.Now,
+            RespondedAt = Clock.Now
+        });
+        Db.SaveChanges();
+        Db.ChangeTracker.Clear();
+    }
+
+    public Task<Shared.Dtos.UnlockResultDto> ClaimAs(Guid userId, string code) =>
+        HandlerFor(userId).Handle(new ClaimAchievementCommand(AchievementId(code)), CancellationToken.None);
 
     public Guid AchievementId(string code) => AchievementCatalogue.IdFor(code);
 

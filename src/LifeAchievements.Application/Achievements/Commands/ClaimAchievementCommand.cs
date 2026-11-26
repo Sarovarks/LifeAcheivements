@@ -24,7 +24,7 @@ public class ClaimAchievementCommandHandler(
     IAppDbContext db,
     ICurrentUser currentUser,
     IClock clock,
-    IDomainEventDispatcher events)
+    IUnlockService unlocks)
     : ICommandHandler<ClaimAchievementCommand, UnlockResultDto>
 {
     public async Task<UnlockResultDto> Handle(ClaimAchievementCommand command, CancellationToken ct)
@@ -133,64 +133,32 @@ public class ClaimAchievementCommandHandler(
                 BonusUnlocks: []);
         }
 
-        // 5. Self-verified: approve, write the ledger and update the cached total - one transaction.
-        var xpBefore = user.TotalXp;
-        var oldLevel = LevelCurve.LevelFor(xpBefore);
+        // 5. Self-verified: approve through the shared pipeline, so this behaves exactly the
+        //    same as a friend verifying a pending claim later on.
+        var outcome = await unlocks.ApproveAsync(
+            claim, achievement, user, run, now, verifiedBy: null, isNewClaim: true, ct);
 
-        await using var tx = await db.BeginTransactionAsync(ct);
-
-        claim.Approve(now);
-        db.UserAchievements.Add(claim);
-
-        db.XpTransactions.Add(new XpTransaction
-        {
-            UserId = userId,
-            Amount = achievement.XpReward,
-            Reason = $"Unlocked {achievement.Name}",
-            SourceUserAchievementId = claim.Id,
-            CreatedAt = now
-        });
-
-        user.TotalXp = xpBefore + achievement.XpReward;
-
-        // The run has been cashed in; start the next one from zero.
-        if (run is not null)
-        {
-            run.Current = 0;
-            run.WindowStartedAt = now;
-            run.UpdatedAt = now;
-        }
-
-        await db.SaveChangesAsync(ct);
-
-        // 6. Event handlers evaluate the hidden rules and may add more ledger rows.
-        var unlocked = AchievementUnlocked.From(claim, achievement, xpBefore, user.TotalXp, now);
-        await events.Dispatch(unlocked, ct);
-        await db.SaveChangesAsync(ct);
-
-        await tx.CommitAsync(ct);
-
-        // 7. Build the result from the state after everything (bonuses included) landed.
-        var bonuses = await LoadBonusUnlocks(unlocked.BonusUserAchievementIds, ct);
-        var progress = LevelCurve.ProgressFor(user.TotalXp);
+        // 6. Build the result from the state after everything (bonuses included) landed.
+        var bonuses = await LoadBonusUnlocks(outcome.BonusUserAchievementIds, ct);
+        var progress = LevelCurve.ProgressFor(outcome.XpAfter);
 
         return new UnlockResultDto(
             claim.Id,
             achievement.Id, achievement.Code, achievement.Name, achievement.Description,
             achievement.Tier.ToString(), achievement.Icon, AchievementStatuses.Unlocked,
             XpGained: achievement.XpReward,
-            NewTotalXp: user.TotalXp,
-            OldLevel: oldLevel,
-            NewLevel: progress.Level,
+            NewTotalXp: outcome.XpAfter,
+            OldLevel: outcome.OldLevel,
+            NewLevel: outcome.NewLevel,
             NewLevelTitle: progress.Title,
-            LeveledUp: progress.Level > oldLevel,
+            LeveledUp: outcome.LeveledUp,
             XpToNextLevel: progress.XpToNextLevel,
             ProgressPercent: progress.ProgressPercent,
             BonusUnlocks: bonuses);
     }
 
     /// <summary>Hidden achievements the event handlers auto-unlocked as part of this same claim.</summary>
-    private async Task<List<BonusUnlockDto>> LoadBonusUnlocks(List<Guid> bonusClaimIds, CancellationToken ct)
+    private async Task<List<BonusUnlockDto>> LoadBonusUnlocks(IReadOnlyList<Guid> bonusClaimIds, CancellationToken ct)
     {
         if (bonusClaimIds.Count == 0) return [];
 

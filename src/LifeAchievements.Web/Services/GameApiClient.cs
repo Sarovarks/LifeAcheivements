@@ -87,6 +87,47 @@ public class GameApiClient(HttpClient http, TokenStore tokens, AuthEvents authEv
                ?? throw new ApiException("The server did not describe the unlock.");
     }
 
+    // ---------- social (Phase 2) ----------
+
+    public Task<FriendsOverviewDto> GetFriendsAsync() => Get<FriendsOverviewDto>("friends");
+
+    public Task<WeeklyLeaderboardDto> GetLeaderboardAsync() =>
+        Get<WeeklyLeaderboardDto>("friends/leaderboard");
+
+    public Task<List<FeedItemDto>> GetFeedAsync(int take = 30) =>
+        Get<List<FeedItemDto>>($"feed?take={take}");
+
+    public Task<List<PendingVerificationDto>> GetPendingVerificationsAsync() =>
+        Get<List<PendingVerificationDto>>("verifications");
+
+    public async Task SendFriendRequestAsync(string email) =>
+        await PostAuthorised("friends/requests", new SendFriendRequestRequest(email));
+
+    public async Task RespondToFriendRequestAsync(Guid friendshipId, bool accept) =>
+        await PostAuthorised($"friends/requests/{friendshipId}", new RespondToFriendRequestRequest(accept));
+
+    public async Task<ReactionResultDto> ToggleReactionAsync(Guid userAchievementId, string type)
+    {
+        var response = await PostAuthorised($"feed/{userAchievementId}/reactions", new ToggleReactionRequest(type));
+        return await response.Content.ReadFromJsonAsync<ReactionResultDto>(Json)
+               ?? throw new ApiException("The server did not describe the reaction.");
+    }
+
+    public async Task<VerifyClaimResultDto> VerifyClaimAsync(Guid userAchievementId, bool approve)
+    {
+        var response = await PostAuthorised($"verifications/{userAchievementId}", new VerifyClaimRequest(approve));
+        return await response.Content.ReadFromJsonAsync<VerifyClaimResultDto>(Json)
+               ?? throw new ApiException("The server did not describe the verification.");
+    }
+
+    private async Task<HttpResponseMessage> PostAuthorised<TBody>(string url, TBody body)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(body) };
+        var response = await SendAuthorised(request);
+        await ThrowIfFailed(response);
+        return response;
+    }
+
     // ---------- plumbing ----------
 
     private async Task<T> Get<T>(string url)
