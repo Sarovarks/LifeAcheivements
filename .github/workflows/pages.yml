@@ -110,3 +110,25 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      # Prove the deployed site really points at the API, rather than trusting that the
+      # build step wrote what we think it wrote. A frontend serving a stale or wrong
+      # ApiBaseUrl looks perfectly healthy and simply cannot sign anyone in.
+      - name: Verify the deployed site
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          echo "Checking ${PAGE_URL}"
+          for attempt in $(seq 1 10); do
+            CONFIG=$(curl -fsS "${PAGE_URL%/}/appsettings.json" 2>/dev/null || true)
+            if echo "${CONFIG}" | grep -qF "${API_BASE_URL}"; then
+              echo "Live site points at ${API_BASE_URL}"
+              exit 0
+            fi
+            echo "attempt ${attempt}: not updated yet"
+            sleep 10
+          done
+          echo "::error::The deployed appsettings.json does not contain ${API_BASE_URL}."
+          echo "Last response was: ${CONFIG}"
+          exit 1
