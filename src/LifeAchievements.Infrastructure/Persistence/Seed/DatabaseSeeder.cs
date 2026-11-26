@@ -38,7 +38,9 @@ public class DatabaseSeeder(AppDbContext db, ILogger<DatabaseSeeder> logger)
                 && current.XpReward == seed.XpReward && current.IsHidden == seed.IsHidden
                 && current.Hint == seed.Hint && current.IsRepeatable == seed.IsRepeatable
                 && current.CooldownHours == seed.CooldownHours
-                && current.VerificationType == seed.VerificationType && current.Icon == seed.Icon)
+                && current.VerificationType == seed.VerificationType && current.Icon == seed.Icon
+                && current.TargetCount == seed.TargetCount && current.ProgressUnit == seed.ProgressUnit
+                && current.ProgressWindow == seed.ProgressWindow)
             {
                 continue;
             }
@@ -54,6 +56,9 @@ public class DatabaseSeeder(AppDbContext db, ILogger<DatabaseSeeder> logger)
             current.CooldownHours = seed.CooldownHours;
             current.VerificationType = seed.VerificationType;
             current.Icon = seed.Icon;
+            current.TargetCount = seed.TargetCount;
+            current.ProgressUnit = seed.ProgressUnit;
+            current.ProgressWindow = seed.ProgressWindow;
             updated++;
         }
 

@@ -32,5 +32,19 @@ public class Achievement
     /// <summary>Icon key the frontend maps to an inline SVG.</summary>
     public string Icon { get; set; } = "trophy";
 
+    /// <summary>
+    /// Steps needed before this can be claimed, for the multi-step ones. Null means it is a
+    /// single act you either did or did not do, and it stays claimable straight away.
+    /// </summary>
+    public int? TargetCount { get; set; }
+
+    /// <summary>What one step is called, e.g. "gym days", "books". Plural, lowercase.</summary>
+    public string? ProgressUnit { get; set; }
+
+    /// <summary>How long a run lasts before it resets. Ignored when TargetCount is null.</summary>
+    public ProgressWindow ProgressWindow { get; set; } = ProgressWindow.Forever;
+
+    public bool HasProgress => TargetCount is > 1;
+
     public ICollection<UserAchievement> UserAchievements { get; set; } = new List<UserAchievement>();
 }

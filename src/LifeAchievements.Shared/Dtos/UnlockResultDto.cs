@@ -1,6 +1,7 @@
 namespace LifeAchievements.Shared.Dtos;
 
 public record UnlockResultDto(
+    Guid UserAchievementId,
     Guid AchievementId,
     string Code,
     string Name,
@@ -17,6 +18,18 @@ public record UnlockResultDto(
     int XpToNextLevel,
     double ProgressPercent,
     IReadOnlyList<BonusUnlockDto> BonusUnlocks);
+
+/// <summary>Attach a sentence about what actually happened, from the unlock screen.</summary>
+public record SetUnlockNoteRequest(string? Note);
+
+/// <summary>Log a step towards a multi-step achievement.</summary>
+public record LogProgressRequest(int Amount = 1);
+
+public record LogProgressResultDto(
+    Guid AchievementId,
+    string Name,
+    ProgressDto Progress,
+    bool JustCompleted);
 
 public record BonusUnlockDto(
     Guid AchievementId,

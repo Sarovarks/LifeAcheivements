@@ -23,6 +23,8 @@ public static class DependencyInjection
 
         // Commands
         services.AddScoped<ICommandHandler<ClaimAchievementCommand, UnlockResultDto>, ClaimAchievementCommandHandler>();
+        services.AddScoped<ICommandHandler<LogProgressCommand, LogProgressResultDto>, LogProgressCommandHandler>();
+        services.AddScoped<ICommandHandler<SetUnlockNoteCommand, bool>, SetUnlockNoteCommandHandler>();
 
         // Queries
         services.AddScoped<IQueryHandler<GetMeQuery, MeDto>, GetMeQueryHandler>();

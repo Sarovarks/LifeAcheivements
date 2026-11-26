@@ -1,6 +1,8 @@
 using LifeAchievements.Application.Abstractions;
+using LifeAchievements.Application.Achievements.Commands;
 using LifeAchievements.Domain.Entities;
 using LifeAchievements.Domain.Enums;
+using LifeAchievements.Domain.Rules;
 using LifeAchievements.Shared.Dtos;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,6 +40,11 @@ public class GetAchievementsQueryHandler(IAppDbContext db, ICurrentUser currentU
         var byAchievement = mine.GroupBy(x => x.AchievementId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
+        var progressRows = await db.AchievementProgress.AsNoTracking()
+            .Where(p => p.UserId == userId)
+            .ToListAsync(ct);
+        var progressByAchievement = progressRows.ToDictionary(p => p.AchievementId);
+
         return list.Select(a =>
         {
             byAchievement.TryGetValue(a.Id, out var claims);
@@ -52,7 +59,19 @@ public class GetAchievementsQueryHandler(IAppDbContext db, ICurrentUser currentU
             if (a.IsRepeatable && a.CooldownHours is { } hours && lastUnlockedAt is { } last)
                 claimableAgainAt = last.AddHours(hours);
 
-            var status = ResolveStatus(a, timesUnlocked, hasPending, claimableAgainAt, now);
+            ProgressDto? progress = null;
+            if (a.HasProgress)
+            {
+                progressByAchievement.TryGetValue(a.Id, out var row);
+
+                // A lapsed run reads as zero without needing a write on a GET.
+                if (row is not null && ProgressRules.HasWindowLapsed(a.ProgressWindow, row.WindowStartedAt, now))
+                    row = null;
+
+                progress = ProgressMapper.ToDto(a, row);
+            }
+
+            var status = ResolveStatus(a, timesUnlocked, hasPending, claimableAgainAt, now, progress);
             var unlockedEver = timesUnlocked > 0;
 
             // Hidden achievements stay masked until they are actually earned.
@@ -66,7 +85,7 @@ public class GetAchievementsQueryHandler(IAppDbContext db, ICurrentUser currentU
                     IsRepeatable: a.IsRepeatable, CooldownHours: a.CooldownHours,
                     VerificationType: a.VerificationType.ToString(), Icon: "lock",
                     Status: AchievementStatuses.Locked, TimesUnlocked: 0,
-                    LastUnlockedAt: null, ClaimableAgainAt: null);
+                    LastUnlockedAt: null, ClaimableAgainAt: null, Progress: null);
             }
 
             return new AchievementDto(
@@ -75,18 +94,24 @@ public class GetAchievementsQueryHandler(IAppDbContext db, ICurrentUser currentU
                 a.IsHidden, a.Hint, a.IsRepeatable, a.CooldownHours,
                 a.VerificationType.ToString(), a.Icon,
                 status, timesUnlocked, lastUnlockedAt,
-                status == AchievementStatuses.Cooldown ? claimableAgainAt : null);
+                status == AchievementStatuses.Cooldown ? claimableAgainAt : null,
+                progress);
         }).ToList();
     }
 
     private static string ResolveStatus(
-        Achievement a, int timesUnlocked, bool hasPending, DateTimeOffset? claimableAgainAt, DateTimeOffset now)
+        Achievement a, int timesUnlocked, bool hasPending, DateTimeOffset? claimableAgainAt,
+        DateTimeOffset now, ProgressDto? progress)
     {
         if (hasPending) return AchievementStatuses.Pending;
 
         // Hidden / Auto ones can never be claimed by hand.
         if (a.IsHidden || a.VerificationType == VerificationType.Auto)
             return timesUnlocked > 0 ? AchievementStatuses.Unlocked : AchievementStatuses.Locked;
+
+        // A multi-step achievement is only claimable once the run is finished.
+        if (progress is { IsComplete: false } && timesUnlocked == 0)
+            return AchievementStatuses.InProgress;
 
         if (timesUnlocked == 0) return AchievementStatuses.Claimable;
         if (!a.IsRepeatable) return AchievementStatuses.Unlocked;

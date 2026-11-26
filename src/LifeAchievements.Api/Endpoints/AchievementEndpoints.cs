@@ -1,6 +1,8 @@
 using LifeAchievements.Application.Abstractions;
 using LifeAchievements.Application.Achievements.Commands;
 using LifeAchievements.Application.Achievements.Queries;
+using LifeAchievements.Shared.Dtos;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LifeAchievements.Api.Endpoints;
 
@@ -21,6 +23,12 @@ public static class AchievementEndpoints
                 dispatcher.Send(new ClaimAchievementCommand(id), ct))
             .WithName("ClaimAchievement")
             .WithSummary("Claim an achievement. Self-verified ones unlock immediately.");
+
+        group.MapPost("/{id:guid}/progress", (Guid id, [FromBody] LogProgressRequest? request,
+                IDispatcher dispatcher, CancellationToken ct) =>
+                dispatcher.Send(new LogProgressCommand(id, request?.Amount ?? 1), ct))
+            .WithName("LogProgress")
+            .WithSummary("Log a step towards a multi-step achievement, e.g. one gym day.");
 
         return app;
     }

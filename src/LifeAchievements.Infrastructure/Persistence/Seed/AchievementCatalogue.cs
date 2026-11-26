@@ -23,7 +23,9 @@ public static class AchievementCatalogue
         AchievementTier tier, int xp, string icon,
         bool repeatable = false, int? cooldownHours = null,
         VerificationType verification = VerificationType.Self,
-        bool hidden = false, string? hint = null) =>
+        bool hidden = false, string? hint = null,
+        int? target = null, string? unit = null,
+        ProgressWindow window = ProgressWindow.Forever) =>
         new()
         {
             Id = IdFor(code),
@@ -38,7 +40,10 @@ public static class AchievementCatalogue
             CooldownHours = cooldownHours,
             VerificationType = verification,
             IsHidden = hidden,
-            Hint = hint
+            Hint = hint,
+            TargetCount = target,
+            ProgressUnit = unit,
+            ProgressWindow = window
         };
 
     public static IReadOnlyList<Achievement> All =>
@@ -50,7 +55,8 @@ public static class AchievementCatalogue
 
         A("IRON_WILL", "Iron Will",
             "Hit the gym five days in one week. Your future self is quietly applauding.",
-            AchievementCategory.Health, AchievementTier.Rare, 200, "dumbbell"),
+            AchievementCategory.Health, AchievementTier.Rare, 200, "dumbbell",
+            target: 5, unit: "gym days", window: ProgressWindow.Week),
 
         A("TEN_K_STEPS", "10K Steps",
             "Walked ten thousand steps in a day. Pacing while on a call absolutely counts.",
@@ -66,7 +72,8 @@ public static class AchievementCatalogue
 
         A("SWEET_NOTHING", "Sweet Nothing",
             "Seven days with no added sugar. The cake understands. The cake forgives.",
-            AchievementCategory.Health, AchievementTier.Rare, 150, "candy-off"),
+            AchievementCategory.Health, AchievementTier.Rare, 150, "candy-off",
+            target: 7, unit: "sugar-free days", window: ProgressWindow.Week),
 
         A("HALF_MARATHON", "Half Marathon",
             "Ran 21.1 km on purpose. Nobody was chasing you. You simply chose this.",
@@ -119,7 +126,8 @@ public static class AchievementCatalogue
 
         A("LIBRARY_CARD", "Library Card",
             "Twelve books finished in one year. Audiobooks count. Summaries do not.",
-            AchievementCategory.Work, AchievementTier.Legendary, 600, "library"),
+            AchievementCategory.Work, AchievementTier.Legendary, 600, "library",
+            target: 12, unit: "books", window: ProgressWindow.Year),
 
         A("SIDE_PROJECT_SHIPPER", "Side Project Shipper",
             "Actually finished a side project instead of starting a shinier one. Rare species.",
@@ -170,7 +178,8 @@ public static class AchievementCatalogue
         // ---------------- Social (8) ----------------
         A("TURF_LEGEND", "Turf Legend",
             "Scored fifty runs in Sunday turf cricket. Witnesses strongly required.",
-            AchievementCategory.Social, AchievementTier.Rare, 250, "trophy", verification: VerificationType.Friend),
+            AchievementCategory.Social, AchievementTier.Rare, 250, "trophy", verification: VerificationType.Friend,
+            target: 50, unit: "runs", window: ProgressWindow.Forever),
 
         A("RECONNECTED", "Reconnected",
             "Called an old friend out of nowhere. Better still, they picked up.",
@@ -208,11 +217,13 @@ public static class AchievementCatalogue
 
         A("DIGITAL_DETOX", "Digital Detox Weekend",
             "A whole weekend offline. Yes, the world kept turning without your input.",
-            AchievementCategory.Mind, AchievementTier.Rare, 200, "wifi-off"),
+            AchievementCategory.Mind, AchievementTier.Rare, 200, "wifi-off",
+            target: 2, unit: "offline days", window: ProgressWindow.Week),
 
         A("NO_SPEND_WEEK", "No Spend Week",
             "Seven days without a single impulse purchase. The cart stayed abandoned.",
-            AchievementCategory.Mind, AchievementTier.Rare, 180, "wallet"),
+            AchievementCategory.Mind, AchievementTier.Rare, 180, "wallet",
+            target: 7, unit: "no-spend days", window: ProgressWindow.Week),
 
         A("STILL_MIND", "Still Mind",
             "Ten minutes of meditation without once checking how much was left.",

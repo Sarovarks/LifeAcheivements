@@ -93,7 +93,8 @@
                         <span class="xp-gain">+@quest.XpReward</span>
                     </div>
                     <div class="bar">
-                        <div class="bar__fill" style="width:@QuestProgress(quest)%"></div>
+                        <div class="bar__fill @(QuestIsComplete(quest) ? "bar__fill--gold" : "")"
+                             style="width:@QuestProgress(quest)%"></div>
                     </div>
                 </div>
             }
@@ -116,6 +117,10 @@
                     <div class="row__body">
                         <div class="row__name">@unlock.Name</div>
                         <div class="row__meta">@Ago(unlock.UnlockedAt)</div>
+                        @if (!string.IsNullOrWhiteSpace(unlock.Note))
+                        {
+                            <div class="row__note">@unlock.Note</div>
+                        }
                     </div>
                     <span class="xp-gain">+@unlock.XpGained</span>
                 </div>
@@ -163,10 +168,19 @@
 
             var all = await Api.GetAchievementsAsync();
 
-            // "Quests" = what you could claim right now, cheapest first so the list feels doable.
+            // Quests are the things actually under way: multi-step runs you have started come
+            // first (those have real progress), then anything finished and waiting to be
+            // claimed, then a cheap claimable one so the list is never empty.
             _quests = all
-                .Where(a => a.Status is AchievementStatuses.Claimable or AchievementStatuses.Cooldown)
-                .OrderBy(a => a.Status == AchievementStatuses.Claimable ? 0 : 1)
+                .Where(a => a.Status is AchievementStatuses.InProgress or AchievementStatuses.Claimable)
+                .OrderBy(a => a switch
+                {
+                    { Progress: { IsComplete: true } } => 0,          // finished, claim it
+                    { Progress: { Current: > 0 } } => 1,              // under way
+                    { Progress: not null } => 2,                      // not started yet
+                    _ => 3                                            // ordinary one-tap
+                })
+                .ThenByDescending(a => a.Progress?.Percent ?? 0)
                 .ThenBy(a => a.XpReward)
                 .Take(3)
                 .ToList();
@@ -187,15 +201,21 @@
         }
     }
 
-    private static string QuestHint(AchievementDto quest) => quest.Status switch
+    private static string QuestHint(AchievementDto quest) => quest switch
     {
-        AchievementStatuses.Cooldown when quest.ClaimableAgainAt is { } at => $"Ready {Until(at)}",
-        _ when quest.TimesUnlocked > 0 => $"Done {quest.TimesUnlocked} times - go again",
+        { Progress: { IsComplete: true } } => "Finished - claim it",
+        { Progress: { } p } => p.Summary,
+        { Status: AchievementStatuses.Cooldown, ClaimableAgainAt: { } at } => $"Ready {Until(at)}",
+        { TimesUnlocked: > 0 } => $"Done {quest.TimesUnlocked} times - go again",
         _ => quest.Description
     };
 
-    private static int QuestProgress(AchievementDto quest) =>
-        quest.Status == AchievementStatuses.Claimable ? 100 : 35;
+    /// <summary>Real progress for multi-step achievements; a one-tap one is simply ready.</summary>
+    private static string QuestProgress(AchievementDto quest) =>
+        (quest.Progress?.Percent ?? 100d).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static bool QuestIsComplete(AchievementDto quest) =>
+        quest.Progress is null || quest.Progress.IsComplete;
 
     private static string Until(DateTimeOffset at)
     {

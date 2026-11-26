@@ -26,7 +26,8 @@ public class GetRecentUnlocksQueryHandler(IAppDbContext db, ICurrentUser current
                 ua.Achievement.Icon,
                 ua.Achievement.Tier.ToString(),
                 ua.Achievement.XpReward,
-                ua.ApprovedAt!.Value))
+                ua.ApprovedAt!.Value,
+                ua.Note))
             .ToListAsync(ct);
     }
 }

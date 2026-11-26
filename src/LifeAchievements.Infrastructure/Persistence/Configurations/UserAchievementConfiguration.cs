@@ -12,6 +12,7 @@ public class UserAchievementConfiguration : IEntityTypeConfiguration<UserAchieve
         builder.HasKey(ua => ua.Id);
 
         builder.Property(ua => ua.Status).HasConversion<string>().HasMaxLength(32);
+        builder.Property(ua => ua.Note).HasMaxLength(UserAchievement.MaxNoteLength);
 
         builder.HasOne(ua => ua.Achievement)
             .WithMany(a => a.UserAchievements)

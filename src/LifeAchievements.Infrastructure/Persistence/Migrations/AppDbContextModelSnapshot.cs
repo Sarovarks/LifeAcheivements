@@ -66,6 +66,18 @@ namespace LifeAchievements.Infrastructure.Persistence.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
+                    b.Property<string>("ProgressUnit")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("ProgressWindow")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<int?>("TargetCount")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Tier")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -87,6 +99,37 @@ namespace LifeAchievements.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("achievements", (string)null);
+                });
+
+            modelBuilder.Entity("LifeAchievements.Domain.Entities.AchievementProgress", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AchievementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Current")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("WindowStartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AchievementId");
+
+                    b.HasIndex("UserId", "AchievementId")
+                        .IsUnique();
+
+                    b.ToTable("achievement_progress", (string)null);
                 });
 
             modelBuilder.Entity("LifeAchievements.Domain.Entities.AppUser", b =>
@@ -181,6 +224,10 @@ namespace LifeAchievements.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTimeOffset>("ClaimedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(280)
+                        .HasColumnType("character varying(280)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -362,6 +409,23 @@ namespace LifeAchievements.Infrastructure.Persistence.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("LifeAchievements.Domain.Entities.AchievementProgress", b =>
+                {
+                    b.HasOne("LifeAchievements.Domain.Entities.Achievement", "Achievement")
+                        .WithMany()
+                        .HasForeignKey("AchievementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LifeAchievements.Domain.Entities.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Achievement");
                 });
 
             modelBuilder.Entity("LifeAchievements.Domain.Entities.UserAchievement", b =>

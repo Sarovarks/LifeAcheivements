@@ -58,6 +58,15 @@ public sealed class ClaimTestHarness : IAsyncDisposable
 
     public Guid AchievementId(string code) => AchievementCatalogue.IdFor(code);
 
+    /// <summary>Finishes a multi-step achievement's run so a claim can be tested past it.</summary>
+    public async Task CompleteProgress(string code)
+    {
+        var achievement = await Db.Achievements.AsNoTracking().FirstAsync(a => a.Code == code);
+        await new Achievements.Commands.LogProgressCommandHandler(Db, new TestCurrentUser(UserId), Clock)
+            .Handle(new Achievements.Commands.LogProgressCommand(achievement.Id, achievement.TargetCount!.Value),
+                CancellationToken.None);
+    }
+
     public Task<Shared.Dtos.UnlockResultDto> Claim(string code) =>
         Handler().Handle(new ClaimAchievementCommand(AchievementId(code)), CancellationToken.None);
 

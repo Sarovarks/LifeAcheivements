@@ -17,6 +17,14 @@ public class UserAchievement
     /// <summary>Friend who verified the claim (Phase 2).</summary>
     public Guid? VerifiedByUserId { get; set; }
 
+    /// <summary>
+    /// What actually happened, in the player's own words. Optional, added on the unlock screen.
+    /// This is what makes the app worth reopening in a year - the XP is just the score.
+    /// </summary>
+    public string? Note { get; set; }
+
+    public const int MaxNoteLength = 280;
+
     public void Approve(DateTimeOffset at, Guid? verifiedBy = null)
     {
         Status = ClaimStatus.Approved;

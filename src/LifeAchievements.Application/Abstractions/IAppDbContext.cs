@@ -14,6 +14,7 @@ public interface IAppDbContext
     DbSet<Achievement> Achievements { get; }
     DbSet<UserAchievement> UserAchievements { get; }
     DbSet<XpTransaction> XpTransactions { get; }
+    DbSet<AchievementProgress> AchievementProgress { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken ct = default);

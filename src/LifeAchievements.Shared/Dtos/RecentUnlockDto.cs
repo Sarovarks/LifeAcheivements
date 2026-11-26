@@ -7,4 +7,5 @@ public record RecentUnlockDto(
     string Icon,
     string Tier,
     int XpGained,
-    DateTimeOffset UnlockedAt);
+    DateTimeOffset UnlockedAt,
+    string? Note);

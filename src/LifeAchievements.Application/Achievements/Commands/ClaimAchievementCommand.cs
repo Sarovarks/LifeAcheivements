@@ -70,6 +70,25 @@ public class ClaimAchievementCommandHandler(
             }
         }
 
+        // 3b. A multi-step achievement has to actually be finished first.
+        AchievementProgress? run = null;
+        if (achievement.HasProgress)
+        {
+            var target = achievement.TargetCount!.Value;
+            run = await db.AchievementProgress
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.AchievementId == achievement.Id, ct);
+
+            run?.ResetIfWindowLapsed(achievement.ProgressWindow, now);
+
+            var current = run?.Current ?? 0;
+            if (current < target)
+            {
+                var unit = achievement.ProgressUnit ?? "steps";
+                throw new DomainException(
+                    $"\"{achievement.Name}\" is not finished yet - {current} of {target} {unit}. Keep going.");
+            }
+        }
+
         var claim = new UserAchievement
         {
             UserId = userId,
@@ -86,6 +105,7 @@ public class ClaimAchievementCommandHandler(
 
             var pendingProgress = LevelCurve.ProgressFor(user.TotalXp);
             return new UnlockResultDto(
+                claim.Id,
                 achievement.Id, achievement.Code, achievement.Name, achievement.Description,
                 achievement.Tier.ToString(), achievement.Icon, AchievementStatuses.Pending,
                 XpGained: 0, NewTotalXp: user.TotalXp,
@@ -115,6 +135,15 @@ public class ClaimAchievementCommandHandler(
         });
 
         user.TotalXp = xpBefore + achievement.XpReward;
+
+        // The run has been cashed in; start the next one from zero.
+        if (run is not null)
+        {
+            run.Current = 0;
+            run.WindowStartedAt = now;
+            run.UpdatedAt = now;
+        }
+
         await db.SaveChangesAsync(ct);
 
         // 6. Event handlers evaluate the hidden rules and may add more ledger rows.
@@ -129,6 +158,7 @@ public class ClaimAchievementCommandHandler(
         var progress = LevelCurve.ProgressFor(user.TotalXp);
 
         return new UnlockResultDto(
+            claim.Id,
             achievement.Id, achievement.Code, achievement.Name, achievement.Description,
             achievement.Tier.ToString(), achievement.Icon, AchievementStatuses.Unlocked,
             XpGained: achievement.XpReward,

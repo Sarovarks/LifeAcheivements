@@ -38,7 +38,8 @@
             {
                 var locked = achievement.IsHidden && achievement.Status == AchievementStatuses.Locked;
 
-                <div class="row @(locked ? "row--locked" : "")">
+                <div class="@(ShowsProgress(achievement) ? "quest" : "row") @(locked ? "row--locked" : "")">
+                  <div class="@(ShowsProgress(achievement) ? "quest__head" : "")" style="display:flex;align-items:center;gap:13px">
                     <div class="icon-square">
                         <Icon Name="@achievement.Icon" />
                     </div>
@@ -74,12 +75,47 @@
                             <span class="pill pill--ghost">Friend verifies</span>
                             break;
 
+                        case AchievementStatuses.InProgress:
+                            <button class="log-button" disabled="@(_logging == achievement.Id)"
+                                    @onclick="() => LogStep(achievement)">
+                                @(_logging == achievement.Id ? "..." : "+1 Log")
+                            </button>
+                            break;
+
                         default:
                             <span class="pill pill--ghost">
                                 <Icon Name="lock" Size="14" />
                             </span>
                             break;
                     }
+                  </div>
+
+                  @* Only while the run still matters - a finished one-shot achievement
+                     should not show a freshly reset bar underneath "Unlocked". *@
+                  @if (achievement.Progress is { } p
+                       && achievement.Status is AchievementStatuses.InProgress or AchievementStatuses.Claimable)
+                  {
+                      <div class="progress-row">
+                          <div class="progress-row__head">
+                              <span>
+                                  <span class="progress-row__count @(p.IsComplete ? "progress-row__count--done" : "")">@p.Current of @p.Target</span>
+                                  @p.Unit @p.WindowLabel
+                              </span>
+                              @if (p.IsComplete)
+                              {
+                                  <span class="progress-row__count--done">Ready to claim</span>
+                              }
+                              else if (p.ResetsAt is { } reset && p.Current > 0 && p.Window != "Forever")
+                              {
+                                  <span>resets @Until(reset)</span>
+                              }
+                          </div>
+                          <div class="bar">
+                              <div class="bar__fill @(p.IsComplete ? "bar__fill--gold" : "")"
+                                   style="width:@Pct(p.Percent)%"></div>
+                          </div>
+                      </div>
+                  }
                 </div>
             }
 
@@ -106,6 +142,7 @@
     private bool _loading = true;
     private string? _error;
     private Guid? _claiming;
+    private Guid? _logging;
     private UnlockResultDto? _unlock;
 
     private List<AchievementDto> Visible => _category == "All"
@@ -173,6 +210,49 @@
             _claiming = null;
         }
     }
+
+    private async Task LogStep(AchievementDto achievement)
+    {
+        _logging = achievement.Id;
+        _error = null;
+
+        try
+        {
+            var result = await Api.LogProgressAsync(achievement.Id);
+
+            // Patch the one row in place - a full reload here would lose the scroll position.
+            var index = _all.FindIndex(a => a.Id == achievement.Id);
+            if (index >= 0)
+            {
+                _all[index] = _all[index] with
+                {
+                    Progress = result.Progress,
+                    Status = result.Progress.IsComplete
+                        ? AchievementStatuses.Claimable
+                        : AchievementStatuses.InProgress
+                };
+            }
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Could not reach the server. Is the API running?";
+        }
+        finally
+        {
+            _logging = null;
+        }
+    }
+
+    private static bool ShowsProgress(AchievementDto a) =>
+        a.Progress is not null
+        && a.Status is AchievementStatuses.InProgress or AchievementStatuses.Claimable;
+
+    private static string Pct(double value) =>
+        value.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
 
     private async Task CloseUnlock()
     {

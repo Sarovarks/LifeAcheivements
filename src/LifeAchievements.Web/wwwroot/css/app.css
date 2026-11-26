@@ -557,3 +557,85 @@ button:disabled { cursor: not-allowed; }
 .loading-progress circle:last-child { stroke: var(--gold); stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%; transition: stroke-dasharray 0.05s ease-in-out; }
 .loading-progress-text { text-align: center; color: var(--muted); font-family: var(--font-body); margin-top: 14px; }
 .loading-progress-text:after { content: "Loading your achievements..."; }
+
+/* ------------------------------------------------------------ progress -- */
+
+.progress-row { margin-top: 10px; }
+
+.progress-row__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.76rem;
+    color: var(--muted);
+    margin-bottom: 7px;
+}
+
+.progress-row__count { color: var(--teal); font-weight: 700; }
+.progress-row__count--done { color: var(--gold); }
+
+.log-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 15px;
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--teal);
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.log-button:active:not(:disabled) { transform: scale(0.97); }
+.log-button:disabled { opacity: 0.5; }
+
+/* ---------------------------------------------------------- note field -- */
+
+.note { margin-top: 20px; text-align: left; animation: rise 0.5s ease 0.35s both; }
+
+.note__label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.note textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 13px 15px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.93rem;
+    resize: vertical;
+}
+
+.note textarea:focus { outline: none; border-color: var(--gold); }
+
+.note__foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    font-size: 0.76rem;
+    color: var(--muted);
+}
+
+.note__saved { color: var(--teal); font-weight: 600; }
+
+.row__note {
+    font-size: 0.8rem;
+    color: var(--text);
+    margin-top: 5px;
+    padding-left: 9px;
+    border-left: 2px solid var(--border);
+    font-style: italic;
+    opacity: 0.85;
+}

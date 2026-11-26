@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Achievement> Achievements => Set<Achievement>();
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
     public DbSet<XpTransaction> XpTransactions => Set<XpTransaction>();
+    public DbSet<AchievementProgress> AchievementProgress => Set<AchievementProgress>();
 
     DbSet<AppUser> IAppDbContext.Users => Users;
 

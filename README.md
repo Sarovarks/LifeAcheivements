@@ -70,8 +70,9 @@ stays out of the way so you are never served a stale app.)
 dotnet test
 ```
 
-54 tests: the level curve and streak rules in `Domain.Tests`, and the whole claim flow against
-a real in-memory SQLite database in `Application.Tests`.
+87 tests: the level curve, streak and progress-window rules in `Domain.Tests`, and the claim
+flow, progress tracking and notes against a real in-memory SQLite database in
+`Application.Tests`.
 
 ---
 
@@ -109,6 +110,8 @@ swap Postgres for SQLite without touching a single handler.
 | `GET` | `/me` | Display name, total XP, level, level title, XP to next level, progress %, unlocked count, streak |
 | `GET` | `/achievements?category=` | Whole catalogue with my status on each; hidden ones masked until earned |
 | `POST` | `/achievements/{id}/claim` | Claim one. Returns `UnlockResultDto` |
+| `POST` | `/achievements/{id}/progress` | Log a step towards a multi-step achievement |
+| `PUT` | `/me/unlocks/{id}/note` | Attach a line about what actually happened |
 | `GET` | `/me/unlocks?take=10` | Recent approved unlocks, newest first |
 
 Everything except the auth routes needs `Authorization: Bearer <token>`.
@@ -153,6 +156,35 @@ means editing one file; no migration, no backfill.
    hold, through the same ledger.
 7. The response carries old/new level, whether you levelled up, and any hidden achievements the
    claim triggered, so the unlock screen can show the whole payoff at once.
+
+### Progress, for the things that take more than a tap
+
+Most achievements are a single act: you did it or you did not. Six of them are not, and those
+carry a `TargetCount`, a `ProgressUnit` and a `ProgressWindow`:
+
+| Achievement | Target | Window |
+|---|---|---|
+| Iron Will | 5 gym days | week |
+| Sweet Nothing | 7 sugar-free days | week |
+| No Spend Week | 7 no-spend days | week |
+| Digital Detox Weekend | 2 offline days | week |
+| Library Card | 12 books | year |
+| Turf Legend | 50 runs | never resets |
+
+`POST /achievements/{id}/progress` adds a step. Reaching the target does **not** unlock
+anything by itself - it moves the achievement from `InProgress` to `Claimable`, so the player
+still gets the trophy screen. Claiming cashes the run in and resets it to zero.
+
+Windows are calendar-based rather than rolling, so "five gym days this week" means this week
+and Monday genuinely starts fresh. A lapsed run reads as zero from the list endpoint without
+writing anything; it is only reset for real when something next writes to it.
+
+### Notes, so the app is worth reopening
+
+Every unlock can carry one line of up to 280 characters - where you went, what it was like.
+The note is set after the claim, from the unlock screen, so the trophy moment stays instant.
+Notes show up again in recent unlocks on the home screen. The XP is the score; this is the
+part you will actually want to read in a year.
 
 ### Hidden achievements
 

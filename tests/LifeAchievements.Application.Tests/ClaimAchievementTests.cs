@@ -14,7 +14,7 @@ public class ClaimAchievementTests
     {
         await using var h = new ClaimTestHarness();
 
-        var result = await h.Claim("IRON_WILL");
+        var result = await h.Claim("SHIPPED_IT");
 
         Assert.Equal(AchievementStatuses.Unlocked, result.Status);
         Assert.Equal(200, result.XpGained);
@@ -31,14 +31,14 @@ public class ClaimAchievementTests
     {
         await using var h = new ClaimTestHarness();
 
-        await h.Claim("IRON_WILL");
+        await h.Claim("SHIPPED_IT");
 
         var entries = await h.Db.XpTransactions.AsNoTracking()
             .Where(x => x.UserId == h.UserId).ToListAsync();
 
-        // Iron Will plus the First Steps hidden achievement it triggers.
+        // Shipped It plus the First Steps hidden achievement it triggers.
         Assert.Equal(2, entries.Count);
-        Assert.Contains(entries, e => e is { Amount: 200 } && e.Reason.Contains("Iron Will"));
+        Assert.Contains(entries, e => e is { Amount: 200 } && e.Reason.Contains("Shipped It"));
         Assert.All(entries, e => Assert.NotNull(e.SourceUserAchievementId));
     }
 
@@ -47,9 +47,9 @@ public class ClaimAchievementTests
     {
         await using var h = new ClaimTestHarness();
 
-        await h.Claim("IRON_WILL");
+        await h.Claim("SHIPPED_IT");
 
-        var ex = await Assert.ThrowsAsync<DomainException>(() => h.Claim("IRON_WILL"));
+        var ex = await Assert.ThrowsAsync<DomainException>(() => h.Claim("SHIPPED_IT"));
         Assert.Contains("already unlocked", ex.Message, StringComparison.OrdinalIgnoreCase);
 
         var user = await h.ReloadUser();
@@ -93,7 +93,7 @@ public class ClaimAchievementTests
     {
         await using var h = new ClaimTestHarness();
 
-        var result = await h.Claim("TURF_LEGEND");
+        var result = await h.Claim("FIRST_DAY_FIRST_SHOW");
 
         Assert.Equal(AchievementStatuses.Pending, result.Status);
         Assert.Equal(0, result.XpGained);
@@ -101,7 +101,7 @@ public class ClaimAchievementTests
         Assert.False(result.LeveledUp);
 
         var claim = await h.Db.UserAchievements.AsNoTracking()
-            .SingleAsync(ua => ua.AchievementId == h.AchievementId("TURF_LEGEND"));
+            .SingleAsync(ua => ua.AchievementId == h.AchievementId("FIRST_DAY_FIRST_SHOW"));
         Assert.Equal(ClaimStatus.Pending, claim.Status);
         Assert.Null(claim.ApprovedAt);
 
@@ -114,9 +114,9 @@ public class ClaimAchievementTests
     {
         await using var h = new ClaimTestHarness();
 
-        await h.Claim("TURF_LEGEND");
+        await h.Claim("FIRST_DAY_FIRST_SHOW");
 
-        var ex = await Assert.ThrowsAsync<DomainException>(() => h.Claim("TURF_LEGEND"));
+        var ex = await Assert.ThrowsAsync<DomainException>(() => h.Claim("FIRST_DAY_FIRST_SHOW"));
         Assert.Contains("verify", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -175,7 +175,7 @@ public class ClaimAchievementTests
     {
         await using var h = new ClaimTestHarness();
 
-        var result = await h.Claim("IRON_WILL");
+        var result = await h.Claim("SHIPPED_IT");
         var progress = LevelCurve.ProgressFor(result.NewTotalXp);
 
         Assert.Equal(progress.XpToNextLevel, result.XpToNextLevel);

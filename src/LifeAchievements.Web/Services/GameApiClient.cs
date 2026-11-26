@@ -54,6 +54,29 @@ public class GameApiClient(HttpClient http, TokenStore tokens, AuthEvents authEv
     public Task<List<RecentUnlockDto>> GetRecentUnlocksAsync(int take = 10) =>
         Get<List<RecentUnlockDto>>($"me/unlocks?take={take}");
 
+    public async Task<LogProgressResultDto> LogProgressAsync(Guid achievementId, int amount = 1)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, $"achievements/{achievementId}/progress")
+        {
+            Content = JsonContent.Create(new LogProgressRequest(amount))
+        };
+        var response = await SendAuthorised(request);
+        await ThrowIfFailed(response);
+
+        return await response.Content.ReadFromJsonAsync<LogProgressResultDto>(Json)
+               ?? throw new ApiException("The server did not describe the progress.");
+    }
+
+    public async Task SetUnlockNoteAsync(Guid userAchievementId, string? note)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Put, $"me/unlocks/{userAchievementId}/note")
+        {
+            Content = JsonContent.Create(new SetUnlockNoteRequest(note))
+        };
+        var response = await SendAuthorised(request);
+        await ThrowIfFailed(response);
+    }
+
     public async Task<UnlockResultDto> ClaimAsync(Guid achievementId)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, $"achievements/{achievementId}/claim");

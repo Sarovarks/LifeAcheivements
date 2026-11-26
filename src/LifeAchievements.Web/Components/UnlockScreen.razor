@@ -2,7 +2,7 @@
 
 <div class="unlock">
     <div class="unlock__inner">
-        <button class="icon-button unlock__close" @onclick="OnClose" aria-label="Close">
+        <button class="icon-button unlock__close" @onclick="CloseWithNote" aria-label="Close">
             <Icon Name="close" Size="20" />
         </button>
 
@@ -76,11 +76,29 @@
             </div>
         }
 
+        @if (Result.Status != AchievementStatuses.Pending)
+        {
+            <div class="note">
+                <label class="note__label" for="note">What actually happened? (optional)</label>
+                <textarea id="note" maxlength="280" placeholder="Munnar. Got lost twice. Worth it."
+                          value="@_note"
+                          @oninput="OnNoteInput"
+                          @onblur="SaveNote"></textarea>
+                <div class="note__foot">
+                    <span>@_note.Length / 280</span>
+                    @if (_noteState is not null)
+                    {
+                        <span class="note__saved">@_noteState</span>
+                    }
+                </div>
+            </div>
+        }
+
         <div class="unlock__actions">
             <button class="btn btn--gold" disabled title="Coming in Phase 2">
                 <Icon Name="friends" Size="19" /> Share with friends
             </button>
-            <button class="btn btn--ghost" @onclick="OnClose">Back to home</button>
+            <button class="btn btn--ghost" @onclick="CloseWithNote">Back to home</button>
         </div>
     </div>
 </div>
@@ -88,6 +106,44 @@
 @code {
     [Parameter, EditorRequired] public UnlockResultDto Result { get; set; } = null!;
     [Parameter] public EventCallback OnClose { get; set; }
+
+    [Inject] public GameApiClient Api { get; set; } = null!;
+
+    private string _note = string.Empty;
+    private string? _noteState;
+    private string _savedNote = string.Empty;
+
+    private void OnNoteInput(ChangeEventArgs e)
+    {
+        _note = e.Value?.ToString() ?? string.Empty;
+        _noteState = null;
+    }
+
+    /// <summary>
+    /// Saved on blur and again on close, so a note is never lost just because the player
+    /// tapped straight through without leaving the field.
+    /// </summary>
+    private async Task SaveNote()
+    {
+        if (_note.Trim() == _savedNote) return;
+
+        try
+        {
+            await Api.SetUnlockNoteAsync(Result.UserAchievementId, _note.Trim());
+            _savedNote = _note.Trim();
+            _noteState = string.IsNullOrWhiteSpace(_savedNote) ? null : "Saved";
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _noteState = "Could not save";
+        }
+    }
+
+    private async Task CloseWithNote()
+    {
+        await SaveNote();
+        await OnClose.InvokeAsync();
+    }
 
     private string Percent => Result.ProgressPercent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
 

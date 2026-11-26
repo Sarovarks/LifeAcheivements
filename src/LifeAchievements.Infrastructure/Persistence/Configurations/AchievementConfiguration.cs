@@ -22,6 +22,10 @@ public class AchievementConfiguration : IEntityTypeConfiguration<Achievement>
         builder.Property(a => a.Category).HasConversion<string>().HasMaxLength(32);
         builder.Property(a => a.Tier).HasConversion<string>().HasMaxLength(32);
         builder.Property(a => a.VerificationType).HasConversion<string>().HasMaxLength(32);
+        builder.Property(a => a.ProgressWindow).HasConversion<string>().HasMaxLength(32);
+        builder.Property(a => a.ProgressUnit).HasMaxLength(32);
+
+        builder.Ignore(a => a.HasProgress);
 
         builder.HasIndex(a => a.Category);
     }
