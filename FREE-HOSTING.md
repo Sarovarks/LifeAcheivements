@@ -52,7 +52,7 @@ cache headers be set properly, which removes three workarounds and one real bug.
 
 1. Sign up at [dash.cloudflare.com](https://dash.cloudflare.com) - free, no card.
 2. **Workers & Pages -> Create -> Pages -> Upload assets**, name the project
-   **`lifeachievements`**, and upload anything (a single empty file is fine) just to create
+   **`scoremylife`**, and upload anything (a single empty file is fine) just to create
    it. The GitHub workflow replaces the contents on the first real deploy.
 3. **My Profile -> API Tokens -> Create Token -> Edit Cloudflare Workers** (or a custom token
    with the *Cloudflare Pages: Edit* permission). Copy it.
@@ -67,7 +67,7 @@ cache headers be set properly, which removes three workarounds and one real bug.
 
 6. **Actions -> Deploy frontend to Cloudflare Pages -> Run workflow.**
 
-The site lands at `https://lifeachievements.pages.dev`.
+The site lands at `https://scoremylife.pages.dev`.
 
 ### What the move fixes
 

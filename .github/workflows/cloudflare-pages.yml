@@ -77,14 +77,14 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy publish/wwwroot --project-name=lifeachievements --branch=main
+          command: pages deploy publish/wwwroot --project-name=scoremylife --branch=main
 
       # The deploy step succeeds once Cloudflare accepts the upload, which says nothing about
       # what the live site actually serves. Check it, rather than assume.
       - name: Verify the deployed site
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
-          SITE_URL: https://lifeachievements.pages.dev
+          SITE_URL: https://scoremylife.pages.dev
         run: |
           for attempt in $(seq 1 12); do
             CONFIG=$(curl -fsS "${SITE_URL}/appsettings.json" 2>/dev/null || true)

@@ -47,7 +47,7 @@ services:
       - key: Cors__AllowedOrigins__0
         value: https://sarovarks.github.io
       - key: Cors__AllowedOrigins__1
-        value: https://lifeachievements.pages.dev
+        value: https://scoremylife.pages.dev
 
       # Render hands the container a port here; Program.cs reads it and binds to it.
       - key: PORT
