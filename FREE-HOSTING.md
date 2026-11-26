@@ -18,6 +18,22 @@ accounts and pasting three values.
 
 ---
 
+## Status
+
+| Piece | State |
+|---|---|
+| Frontend | **Live** at https://sarovarks.github.io/LifeAcheivements/ |
+| API | Not hosted yet - needs a Render account |
+| Database | Not hosted yet - needs a Neon account |
+
+The frontend loads, routes and deep-links correctly. Signing in fails until the API exists,
+because `appsettings.json` still points at `http://localhost:5100`. Setting the `API_BASE_URL`
+repository variable and re-running the Pages workflow fixes that.
+
+One gotcha found while getting this live: GitHub Pages has to be switched on by hand the first
+time (Settings -> Pages -> Source -> "GitHub Actions"). `enablement: true` in the workflow is
+not permitted to do it with the default token.
+
 ## 1. Database: Neon
 
 1. Sign up at [neon.tech](https://neon.tech) with your GitHub account.
