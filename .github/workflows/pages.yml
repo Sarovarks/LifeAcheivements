@@ -2,7 +2,10 @@ name: Deploy frontend to GitHub Pages
 
 # The Blazor app publishes to plain static files, so GitHub Pages can host it for nothing.
 #
-# Before the first run: Settings -> Pages -> Source -> "GitHub Actions".
+# Before the first run, switch Pages on by hand once:
+#   Settings -> Pages -> Source -> "GitHub Actions"
+# The enablement step below tries to do it automatically, but the workflow token is usually
+# not permitted to.
 # Then set a repository variable API_BASE_URL to wherever the API lives, e.g.
 # https://lifeachievements-api.onrender.com - without it the app has nothing to talk to.
 
@@ -79,10 +82,10 @@ jobs:
       - name: Re-stamp service worker integrity hashes
         run: python .github/scripts/fix_service_worker_integrity.py publish/wwwroot
 
-      # enablement: true turns Pages on via the API, so the repository does not have to be
-      # configured by hand first. It needs the workflow's pages: write permission, and the
-      # repository's Actions to be allowed read/write access - if this step fails with a
-      # permissions error, set Settings -> Pages -> Source -> "GitHub Actions" manually.
+      # enablement: true asks the API to switch Pages on. In practice the workflow token was
+      # not allowed to do that here, so Pages had to be turned on by hand the first time:
+      # Settings -> Pages -> Source -> "GitHub Actions". It is left in because it costs
+      # nothing and makes a fresh fork one step easier where the permissions do allow it.
       - uses: actions/configure-pages@v5
         with:
           enablement: true
