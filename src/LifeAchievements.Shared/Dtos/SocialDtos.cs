@@ -116,3 +116,18 @@ public record WeeklyLeaderboardDto(
 
     public LeaderboardEntryDto? Me => Entries.FirstOrDefault(e => e.IsMe);
 }
+
+/// <summary>
+/// One thing that happened to you while you were not looking. Kind is "Reaction",
+/// "FriendRequest" or "Verification", so the UI can pick an icon without parsing text.
+/// </summary>
+public record NotificationDto(
+    string Kind,
+    string Title,
+    string Detail,
+    DateTimeOffset At,
+    bool IsNew,
+    Guid? UserAchievementId,
+    Guid? FriendshipId);
+
+public record NotificationsDto(int NewCount, IReadOnlyList<NotificationDto> Items);

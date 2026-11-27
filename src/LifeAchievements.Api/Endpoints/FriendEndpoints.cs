@@ -68,6 +68,20 @@ public static class FriendEndpoints
             .WithName("ToggleReaction")
             .WithSummary("Cheer or Respect an unlock. Sending the same one again takes it back.");
 
+        // ------------------------------------------------------- notifications --
+
+        var notifications = app.MapGroup("/notifications").RequireAuthorization().WithTags("Notifications");
+
+        notifications.MapGet("", (IDispatcher dispatcher, int? take, CancellationToken ct) =>
+                dispatcher.Query(new GetNotificationsQuery(take is > 0 ? take.Value : 30), ct))
+            .WithName("GetNotifications")
+            .WithSummary("Reactions on your unlocks, friend requests, and claims waiting on you.");
+
+        notifications.MapPost("/seen", (IDispatcher dispatcher, CancellationToken ct) =>
+                dispatcher.Send(new MarkNotificationsSeenCommand(), ct))
+            .WithName("MarkNotificationsSeen")
+            .WithSummary("Clears the badge. The list stays; only what counts as new changes.");
+
         // -------------------------------------------------------- verification --
 
         var verifications = app.MapGroup("/verifications").RequireAuthorization().WithTags("Verification");

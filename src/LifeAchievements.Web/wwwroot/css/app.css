@@ -859,3 +859,68 @@ button:disabled { cursor: not-allowed; }
 
 /* Your own unlock shows the tally without the buttons - a count, not a control. */
 .react--tally { cursor: default; opacity: 0.75; }
+
+/* ------------------------------------------------------ notifications -- */
+
+.bell { position: relative; }
+
+/* The count sits on the bell itself: small, gold, unmissable without shouting. */
+.bell__dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: var(--gold);
+    color: var(--bg);
+    font-size: 0.66rem;
+    font-weight: 700;
+    line-height: 17px;
+    text-align: center;
+    border: 2px solid var(--surface);
+}
+
+/* A sheet rather than a page: notifications are a glance, not a destination. */
+.sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(8, 9, 20, 0.72);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fade-in 0.18s ease both;
+}
+
+.sheet__card {
+    width: 100%;
+    max-width: 440px;
+    max-height: 76vh;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 24px 24px 0 0;
+    padding: 18px 16px calc(22px + env(safe-area-inset-bottom));
+    animation: sheet-up 0.24s ease both;
+}
+
+@keyframes sheet-up { from { transform: translateY(26px); } to { transform: none; } }
+
+.sheet__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.sheet__title { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; margin: 0; }
+
+.sheet__empty { color: var(--muted); font-size: 0.88rem; line-height: 1.5; margin: 8px 2px 14px; }
+
+/* Unread ones carry a gold edge - the only difference, so read ones stay readable. */
+.row--new { border-left: 3px solid var(--gold); }
+
+.notif__time { color: var(--muted); font-size: 0.74rem; white-space: nowrap; align-self: center; }

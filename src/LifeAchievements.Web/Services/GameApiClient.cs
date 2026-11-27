@@ -100,6 +100,12 @@ public class GameApiClient(HttpClient http, TokenStore tokens, AuthEvents authEv
     public Task<List<PendingVerificationDto>> GetPendingVerificationsAsync() =>
         Get<List<PendingVerificationDto>>("verifications");
 
+    public Task<NotificationsDto> GetNotificationsAsync() =>
+        Get<NotificationsDto>("notifications");
+
+    public async Task MarkNotificationsSeenAsync() =>
+        await PostAuthorised("notifications/seen", new { });
+
     public async Task SendFriendRequestAsync(string email) =>
         await PostAuthorised("friends/requests", new SendFriendRequestRequest(email));
 

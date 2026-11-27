@@ -25,8 +25,12 @@
                 <div class="topbar__greeting">@Greeting</div>
                 <h1 class="topbar__name">@_me.DisplayName</h1>
             </div>
-            <button class="icon-button" aria-label="Notifications" disabled title="Coming in Phase 2">
+            <button class="icon-button bell" aria-label="Notifications" @onclick="OpenNotifications">
                 <Icon Name="bell" Size="20" />
+                @if (_newCount > 0)
+                {
+                    <span class="bell__dot">@(_newCount > 9 ? "9+" : _newCount.ToString())</span>
+                }
             </button>
         </header>
 
@@ -131,12 +135,21 @@
 
 <BottomNav />
 
+@if (_showNotifications)
+{
+    <NotificationsPanel Items="_notifications" OnClose="CloseNotifications" />
+}
+
 @code {
     private MeDto? _me;
     private List<AchievementDto> _quests = [];
     private List<RecentUnlockDto> _recent = [];
     private bool _loading = true;
     private string? _error;
+
+    private List<NotificationDto> _notifications = [];
+    private int _newCount;
+    private bool _showNotifications;
 
     private const double Circumference = 2 * Math.PI * 45;
 
@@ -186,6 +199,19 @@
                 .ToList();
 
             _recent = await Api.GetRecentUnlocksAsync(5);
+
+            try
+            {
+                var notifications = await Api.GetNotificationsAsync();
+                _notifications = notifications.Items.ToList();
+                _newCount = notifications.NewCount;
+            }
+            catch (Exception ex) when (ex is ApiException or HttpRequestException)
+            {
+                // A badge is not worth taking the home screen down for.
+                _notifications = [];
+                _newCount = 0;
+            }
         }
         catch (ApiException ex)
         {
@@ -235,4 +261,26 @@
         if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
         return at.ToLocalTime().ToString("d MMM");
     }
+
+    /// <summary>
+    /// Opening marks everything seen, so the badge clears even though the list stays. The
+    /// count is cleared locally first so the dot goes immediately rather than after a round
+    /// trip - and a failed call leaves the list readable instead of blocking the panel.
+    /// </summary>
+    private async Task OpenNotifications()
+    {
+        _showNotifications = true;
+        _newCount = 0;
+
+        try
+        {
+            await Api.MarkNotificationsSeenAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            // The badge will simply come back on the next load.
+        }
+    }
+
+    private void CloseNotifications() => _showNotifications = false;
 }

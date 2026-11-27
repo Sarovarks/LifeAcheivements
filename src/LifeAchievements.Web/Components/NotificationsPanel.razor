@@ -1,0 +1,60 @@
+@* What happened while you were not looking. Opened from the bell on Home. *@
+
+<div class="sheet" @onclick="Close">
+    @* Clicks inside the card must not close it - only the dim backdrop should. *@
+    <div class="sheet__card" @onclick:stopPropagation="true">
+        <div class="sheet__head">
+            <h2 class="sheet__title">Notifications</h2>
+            <button class="icon-button" @onclick="Close" aria-label="Close">
+                <Icon Name="close" Size="20" />
+            </button>
+        </div>
+
+        @if (Items.Count == 0)
+        {
+            <p class="sheet__empty">
+                Nothing yet. Cheers, friend requests and claims waiting on you turn up here.
+            </p>
+        }
+        else
+        {
+            @foreach (var item in Items)
+            {
+                <div class="row @(item.IsNew ? "row--new" : "")">
+                    <div class="icon-square"><Icon Name="@IconFor(item.Kind)" /></div>
+                    <div class="row__body">
+                        <div class="row__name">@item.Title</div>
+                        <div class="row__desc">@item.Detail</div>
+                    </div>
+                    <span class="notif__time">@Ago(item.At)</span>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<NotificationDto> Items { get; set; } = [];
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private Task Close() => OnClose.InvokeAsync();
+
+    private static string IconFor(string kind) => kind switch
+    {
+        "Reaction" => "party",
+        "FriendRequest" => "friends",
+        "Verification" => "badges",
+        _ => "bell"
+    };
+
+    private static string Ago(DateTimeOffset at)
+    {
+        var span = DateTimeOffset.Now - at.ToLocalTime();
+
+        if (span.TotalMinutes < 1) return "just now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+        return at.ToLocalTime().ToString("d MMM");
+    }
+}
