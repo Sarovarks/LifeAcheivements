@@ -9,10 +9,10 @@ Razor, 139 tests.
 | | |
 |---|---|
 | App | https://scoremylife.pages.dev |
-| Fallback | https://sarovarks.github.io/LifeAcheivements/ |
+| Fallback | https://sarovarks.github.io/LifeAchievements/ |
 | API | https://lifeachievements-api.onrender.com |
 | Database | Neon PostgreSQL, Singapore |
-| Repository | https://github.com/Sarovarks/LifeAcheivements |
+| Repository | https://github.com/Sarovarks/LifeAchievements |
 | Cost | Nothing |
 
 ---
@@ -295,8 +295,6 @@ cached total after every scenario.
   migrations into the deploy step first.
 - **PWA installability is unverified.** The browser used for testing blocks service workers, so
   it could not be confirmed. Worth a look in Chrome: DevTools → Application → Service Workers.
-- **The repository name is misspelled** — `LifeAcheivements`. Renaming is a settings change plus
-  a remote update.
 - **Test accounts remain in Neon** from verifying the deployments.
 
 ---

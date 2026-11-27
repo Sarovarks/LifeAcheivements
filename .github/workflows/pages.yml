@@ -48,7 +48,10 @@ jobs:
         run: dotnet publish src/LifeAchievements.Web/LifeAchievements.Web.csproj -c Release -o publish
 
       # Pages serves a project site from /<repo>/, not from the root, so every absolute
-      # path the app generates has to be told about that prefix.
+      # path the app generates has to be told about that prefix. Read from GITHUB_REPOSITORY
+      # rather than written down, so renaming the repository moves the site without a code
+      # change - the rename itself still needs a deploy, because a project site does not
+      # follow the redirect GitHub leaves behind.
       - name: Point base href at the repository subpath
         run: |
           BASE="/${GITHUB_REPOSITORY#*/}/"

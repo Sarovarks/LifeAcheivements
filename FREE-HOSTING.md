@@ -45,7 +45,7 @@ remembering before assuming a deploy is broken.
 
 ## Moving the frontend to Cloudflare Pages
 
-GitHub Pages works, but it serves the app from `/LifeAcheivements/` and forces
+GitHub Pages works, but it serves the app from `/LifeAchievements/` and forces
 `Cache-Control: max-age=600` on everything. Cloudflare Pages gives a root URL and lets the
 cache headers be set properly, which removes three workarounds and one real bug.
 
@@ -113,7 +113,7 @@ this repository.
 ## 2. API: Render
 
 1. Sign up at [render.com](https://render.com) with GitHub.
-2. **New → Blueprint**, pick the `LifeAcheivements` repository.
+2. **New → Blueprint**, pick the `LifeAchievements` repository.
 
 Render reads [`render.yaml`](render.yaml) and sets up the service: Docker runtime, free plan,
 Singapore, health check on `/health/live`. The only thing it will ask for is the one value
@@ -147,7 +147,7 @@ curl https://lifeachievements-api.onrender.com/health/ready
 
 3. **Actions → Deploy frontend to GitHub Pages → Run workflow.**
 
-It lands at `https://sarovarks.github.io/LifeAcheivements/`.
+It lands at `https://sarovarks.github.io/LifeAchievements/`.
 
 ---
 
@@ -166,7 +166,7 @@ If you ever move the frontend elsewhere, change that variable in Render and rede
 Blazor on GitHub Pages has four traps, all handled in
 [`.github/workflows/pages.yml`](.github/workflows/pages.yml):
 
-1. **Pages serves a project site from `/LifeAcheivements/`**, not the root, so `<base href>` is
+1. **Pages serves a project site from `/LifeAchievements/`**, not the root, so `<base href>` is
    rewritten at publish.
 2. **Jekyll silently drops folders starting with an underscore** - which is where Blazor puts
    `_framework`. A `.nojekyll` file disables it. Without this the page loads and the runtime
@@ -190,7 +190,7 @@ match after the base-href rewrite.
 **Verified locally:**
 
 - The frontend publishes, the base href rewrite applies, and the app boots and routes when
-  served from a `/LifeAcheivements/` subpath.
+  served from a `/LifeAchievements/` subpath.
 - The SPA fallback works: a deep link returns `404.html`, the app boots and routes.
 - All 69 service worker hashes match after the re-stamp.
 - The API binds to `PORT` (`Now listening on: http://[::]:10000`), which is how Render decides

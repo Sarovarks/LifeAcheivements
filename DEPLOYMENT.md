@@ -120,7 +120,7 @@ Then add a federated credential for the `main` branch (Entra ID portal → the a
 & secrets → Federated credentials → GitHub Actions), using:
 
 - Organization: `Sarovarks`
-- Repository: `LifeAcheivements`
+- Repository: `LifeAchievements`
 - Entity: Branch, `main`
 
 Finally set three **repository variables** (not secrets - none of these is sensitive):
