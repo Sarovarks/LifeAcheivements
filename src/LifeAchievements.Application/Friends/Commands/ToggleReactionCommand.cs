@@ -22,7 +22,8 @@ public class ToggleReactionCommandValidator : AbstractValidator<ToggleReactionCo
 
 /// <summary>
 /// Tapping the same reaction again takes it back, so the buttons are a toggle rather than a
-/// one-way commitment. Cheer and Respect are independent - you can give both.
+/// one-way commitment. Cheer and Respect are independent - you can give both, but only on
+/// someone else's unlock.
 /// </summary>
 public class ToggleReactionCommandHandler(IAppDbContext db, ICurrentUser currentUser, IClock clock)
     : ICommandHandler<ToggleReactionCommand, ReactionResultDto>
@@ -39,8 +40,13 @@ public class ToggleReactionCommandHandler(IAppDbContext db, ICurrentUser current
         if (claim.Status != ClaimStatus.Approved)
             throw new DomainException("You can only react to something that actually happened.");
 
-        // You can only react to your own or a friend's unlock - not a stranger's.
-        if (claim.UserId != userId && !await FriendQueries.AreFriends(db, userId, claim.UserId, ct))
+        // Cheering yourself is not a reaction, it is a mirror. The count on your own unlock
+        // should mean other people turned up, so applauding yourself is refused outright
+        // rather than quietly counted.
+        if (claim.UserId == userId)
+            throw new DomainException("You cannot cheer your own unlock. Let someone else do that.");
+
+        if (!await FriendQueries.AreFriends(db, userId, claim.UserId, ct))
             throw new DomainException("You can only react to a friend's unlock.");
 
         var existing = await db.Reactions.FirstOrDefaultAsync(r =>

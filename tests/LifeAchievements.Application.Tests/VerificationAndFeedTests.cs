@@ -273,6 +273,49 @@ public class VerificationAndFeedTests
     }
 
     [Fact]
+    public async Task You_cannot_cheer_your_own_unlock()
+    {
+        await using var h = new ClaimTestHarness();
+        var unlock = await h.Claim("SOLO_TRIP");
+
+        var toggle = new ToggleReactionCommandHandler(h.Db, new TestCurrentUser(h.UserId), h.Clock);
+
+        var ex = await Assert.ThrowsAsync<DomainException>(() =>
+            toggle.Handle(new ToggleReactionCommand(unlock.UserAchievementId, "Cheer"), CancellationToken.None));
+
+        Assert.Contains("your own", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task You_cannot_respect_your_own_unlock_either()
+    {
+        await using var h = new ClaimTestHarness();
+        var unlock = await h.Claim("SOLO_TRIP");
+
+        var toggle = new ToggleReactionCommandHandler(h.Db, new TestCurrentUser(h.UserId), h.Clock);
+
+        await Assert.ThrowsAsync<DomainException>(() =>
+            toggle.Handle(new ToggleReactionCommand(unlock.UserAchievementId, "Respect"), CancellationToken.None));
+
+        Assert.Empty(h.Db.Reactions);
+    }
+
+    [Fact]
+    public async Task A_friend_can_still_react_to_my_unlock()
+    {
+        await using var h = new ClaimTestHarness();
+        var friend = h.AddUser("Nidha", "nidha@example.com");
+        h.MakeFriends(h.UserId, friend);
+
+        var unlock = await h.Claim("SOLO_TRIP");
+
+        var result = await new ToggleReactionCommandHandler(h.Db, new TestCurrentUser(friend), h.Clock)
+            .Handle(new ToggleReactionCommand(unlock.UserAchievementId, "Cheer"), CancellationToken.None);
+
+        Assert.Equal(1, result.Cheers);
+    }
+
+    [Fact]
     public async Task Reaction_counts_come_back_on_the_feed()
     {
         await using var h = new ClaimTestHarness();

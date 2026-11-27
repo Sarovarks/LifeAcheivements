@@ -110,16 +110,30 @@
                             }
 
                             <div class="feed-item__actions">
-                                <button class="react @(item.ICheered ? "react--on" : "")"
-                                        disabled="@(_busyId == item.UserAchievementId)"
-                                        @onclick="() => Cheer(item)">
-                                    <Icon Name="party" Size="16" /> Cheer @(item.Cheers > 0 ? item.Cheers.ToString() : "")
-                                </button>
-                                <button class="react react--respect @(item.IRespected ? "react--on" : "")"
-                                        disabled="@(_busyId == item.UserAchievementId)"
-                                        @onclick="() => Respect(item)">
-                                    <Icon Name="hand-heart" Size="16" /> Respect @(item.Respects > 0 ? item.Respects.ToString() : "")
-                                </button>
+                                @if (item.IsMine)
+                                {
+                                    @* Your own unlock: the tally is worth seeing, the buttons are not.
+                                       A cheer should mean someone else turned up. *@
+                                    <span class="react react--tally">
+                                        <Icon Name="party" Size="16" /> @item.Cheers
+                                    </span>
+                                    <span class="react react--tally react--respect">
+                                        <Icon Name="hand-heart" Size="16" /> @item.Respects
+                                    </span>
+                                }
+                                else
+                                {
+                                    <button class="react @(item.ICheered ? "react--on" : "")"
+                                            disabled="@(_busyId == item.UserAchievementId)"
+                                            @onclick="() => Cheer(item)">
+                                        <Icon Name="party" Size="16" /> Cheer @(item.Cheers > 0 ? item.Cheers.ToString() : "")
+                                    </button>
+                                    <button class="react react--respect @(item.IRespected ? "react--on" : "")"
+                                            disabled="@(_busyId == item.UserAchievementId)"
+                                            @onclick="() => Respect(item)">
+                                        <Icon Name="hand-heart" Size="16" /> Respect @(item.Respects > 0 ? item.Respects.ToString() : "")
+                                    </button>
+                                }
                             </div>
                         </div>
                     }
@@ -298,7 +312,7 @@
         try
         {
             await Api.SendFriendRequestAsync(_email.Trim());
-            _message = $"Request sent to {_email.Trim()}.";
+            _message = $"Request sent to {_email.Trim()}. They have to accept it before either of you can see the other's unlocks.";
             _email = string.Empty;
             await Load();
         }
