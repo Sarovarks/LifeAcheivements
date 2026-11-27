@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: scaffolds-new-dotnet-pwa-project
+expected_outcome: |
+  setup-plan.md lays out a layered solution (domain, application, infrastructure, api, web,
+  shared, tests), a docker-compose for local Postgres, and a GitHub Actions workflow that
+  builds the Blazor app and deploys it. Names a free hosting path for all three tiers
+  (static front end, API, Postgres). Warns about the configuration traps that cost evenings:
+  the API address being written at deploy time rather than compiled in, service worker and
+  cache behaviour, and confirming a deploy actually took effect.

@@ -1,0 +1,10 @@
+schema_version: "1.1"
+name: diagnoses-stale-service-worker
+expected_outcome: |
+  diagnosis.md identifies the service worker as the cause: it answers requests before the
+  network is consulted, so cache headers set at the CDN never reach a returning visitor.
+  Explains why incognito and curl both appear fine (neither uses the installed worker).
+  Recommends a network-first fetch strategy, caching assets individually rather than failing
+  the whole install, and skipWaiting plus clients.claim so a new build takes over. States
+  that an already-stuck user must close every tab of the site, as reloading will not release
+  the old worker.

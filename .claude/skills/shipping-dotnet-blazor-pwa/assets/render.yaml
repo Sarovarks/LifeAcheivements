@@ -1,0 +1,61 @@
+# Render blueprint for the API. Render reads this when you connect the repository as a
+# Blueprint (Dashboard -> New -> Blueprint), so the service is defined here rather than
+# clicked together in a UI nobody can review.
+#
+# The database is NOT defined here on purpose: Render's own free Postgres expires, so this
+# setup uses Neon's free plan instead and takes the connection string as a secret.
+
+services:
+  - type: web
+    name: myapp-api
+    runtime: docker
+    plan: free
+    region: singapore          # closest Render region to India
+    branch: main
+
+    dockerfilePath: ./src/MyApp.Api/Dockerfile
+    dockerContext: .
+
+    # Liveness only: this one never touches the database, so a database blip does not get
+    # the container recycled. /health/ready is the one that checks Postgres.
+    healthCheckPath: /health/live
+
+    # Only rebuild when something the API is actually made of has changed.
+    buildFilter:
+      paths:
+        - src/MyApp.Api/**
+        - src/MyApp.Application/**
+        - src/MyApp.Domain/**
+        - src/MyApp.Infrastructure/**
+        - src/MyApp.Shared/**
+        - render.yaml
+
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+
+      # Set in the Render dashboard, never in this file. Neon gives you this string;
+      # Npgsql needs it in key=value form, for example:
+      #   Host=ep-xxx.ap-southeast-1.aws.neon.tech;Database=myapp;
+      #   Username=xxx;Password=xxx;SSL Mode=Require
+      - key: ConnectionStrings__Default
+        sync: false
+
+      # Allowed frontend origins - scheme and host only, no path, no trailing slash.
+      # Both are listed while the app moves from GitHub Pages to Cloudflare; drop the
+      # github.io one once nothing points at it any more.
+      - key: Cors__AllowedOrigins__0
+        value: https://sarovarks.github.io
+      - key: Cors__AllowedOrigins__1
+        value: https://my-pages-project.pages.dev
+
+      # Render hands the container a port here; Program.cs reads it and binds to it.
+      - key: PORT
+        value: 10000
+
+      # Free instances have 512 MB. ASP.NET Core turns on Server GC by default, which keeps
+      # a heap per core and is tuned for machines with room to spare - on a small container
+      # it inflates memory for no benefit at this traffic level. Workstation GC collects
+      # more eagerly and keeps the footprint well inside the limit.
+      - key: DOTNET_gcServer
+        value: 0

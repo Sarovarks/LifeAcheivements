@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: deploy-silently-not-happening
+expected_outcome: |
+  checklist.md connects the repository rename to the deploy host losing access, and says to
+  check the host's deploy events for the absence of any event rather than a failed build.
+  Distinguishes a GitHub App being authorised from being installed, and points at GitHub's
+  Applications settings to confirm the installation. Recommends a version endpoint that
+  reports the running commit so a deploy that silently does not happen becomes visible, and
+  a manual deploy as the immediate unblock.

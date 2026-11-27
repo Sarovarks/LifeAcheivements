@@ -1,0 +1,48 @@
+# Cloudflare Pages cache rules.
+#
+# GitHub Pages forces Cache-Control: max-age=600 on everything, which is why a deploy that
+# changed the API address left browsers calling the old one for ten minutes. Here the files
+# that decide which version of the app you get are never cached, and the fingerprinted ones
+# are cached hard.
+
+# Decides which API the app talks to - must never be stale.
+/appsettings.json
+  Cache-Control: no-store
+
+# Decides which build you get.
+/index.html
+  Cache-Control: no-store
+
+/service-worker.js
+  Cache-Control: no-store
+
+/service-worker-assets.js
+  Cache-Control: no-store
+
+# Fingerprinted: the name changes whenever the content does, so cache for a year.
+/_framework/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# app.css keeps the same name forever, so a cached copy hides every style change until it
+# expires - a chip-layout fix looked like it had not deployed for exactly this reason.
+# no-cache still lets the browser keep it, but it must revalidate, so an edit shows up at once.
+/css/*
+  Cache-Control: no-cache
+
+# Not fingerprinted either, same reasoning as css above.
+/js/*
+  Cache-Control: no-cache
+
+# Nobody requests /index.html - they request / or a deep link, and Cloudflare matches on the
+# requested path, so the rule above never applies to real traffic. Cloudflare's default here
+# (max-age=0, must-revalidate) already revalidates every time, so nothing was stale; this just
+# makes the rule match the path it was written for.
+/
+  Cache-Control: no-store
+
+# Blazor's scoped-CSS bundle keeps its name across builds, exactly like app.css.
+/*.styles.css
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache
