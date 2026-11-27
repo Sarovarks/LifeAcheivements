@@ -53,8 +53,12 @@ public static class FriendEndpoints
 
         var feed = app.MapGroup("/feed").RequireAuthorization().WithTags("Feed");
 
-        feed.MapGet("", (IDispatcher dispatcher, int take, CancellationToken ct) =>
-                dispatcher.Query(new GetFeedQuery(take <= 0 ? 30 : take), ct))
+        // take is optional: a non-nullable int here makes it a REQUIRED query parameter, so
+        // GET /feed answers 400 rather than returning the feed. The app always sends one, so
+        // nothing broke - but the obvious URL being an error is a trap for anything else that
+        // calls this, and the handler already copes with a missing value.
+        feed.MapGet("", (IDispatcher dispatcher, int? take, CancellationToken ct) =>
+                dispatcher.Query(new GetFeedQuery(take is > 0 ? take.Value : 30), ct))
             .WithName("GetFeed")
             .WithSummary("Recent unlocks from you and your friends, with notes and reactions.");
 
