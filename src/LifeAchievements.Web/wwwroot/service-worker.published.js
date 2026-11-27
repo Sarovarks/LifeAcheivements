@@ -58,18 +58,45 @@ async function onActivate(event) {
 }
 
 async function onFetch(event) {
-    let cachedResponse = null;
-    if (event.request.method === 'GET') {
-        // For all navigation requests, try to serve index.html from cache,
-        // unless that request is for an offline resource.
-        // If you need some URLs to be server-rendered, edit the following check to exclude those URLs
-        const shouldServeIndexHtml = event.request.mode === 'navigate'
-            && !manifestUrlList.some(url => url === event.request.url);
+    const request = event.request;
+    const url = new URL(request.url);
 
-        const request = shouldServeIndexHtml ? 'index.html' : event.request;
-        const cache = await caches.open(cacheName);
-        cachedResponse = await cache.match(request);
+    // Anything that is not a plain same-origin GET - API calls, sign-ins, claims - goes
+    // straight to the network and is never cached.
+    if (request.method !== 'GET' || url.origin !== self.origin) {
+        return fetch(request);
     }
 
-    return cachedResponse || fetch(event.request);
+    const isNavigation = request.mode === 'navigate';
+    const fallbackKey = isNavigation ? new URL('index.html', baseUrl).href : request;
+
+    // Network first, cache only as an offline fallback.
+    //
+    // This used to be cache-first, which quietly defeated every cache rule in _headers:
+    // a service worker answers before the network is consulted, so marking index.html and
+    // appsettings.json no-store on Cloudflare did nothing for anyone who had already
+    // visited once. They kept running an old build, pointed at whichever API address was
+    // current when they first loaded the site.
+    //
+    // Network-first costs nothing in speed, because the real caching still happens in the
+    // HTTP cache: fetch() here honours Cache-Control, and _framework/* is immutable, so
+    // those files are served locally without a network round trip anyway. What changes is
+    // that the files which decide WHICH build and WHICH API you get are now always fresh.
+    try {
+        const response = await fetch(request);
+        if (response && response.ok) {
+            const copy = response.clone();
+            event.waitUntil(
+                caches.open(cacheName)
+                    .then(cache => cache.put(fallbackKey, copy))
+                    .catch(() => { /* an uncacheable response is not worth failing over */ }));
+        }
+        return response;
+    } catch (error) {
+        // Offline. Serve the last good copy; a deep link falls back to index.html so the
+        // app shell still starts and can say what is wrong.
+        const cache = await caches.open(cacheName);
+        const cached = await cache.match(fallbackKey);
+        return cached || Response.error();
+    }
 }
