@@ -21,6 +21,53 @@ public class VerificationAndFeedTests
         new GetFeedQueryHandler(h.Db, new TestCurrentUser(asUser))
             .Handle(new GetFeedQuery(30), CancellationToken.None);
 
+    // Every other social test starts from MakeFriends, which inserts an Accepted row
+    // directly. These go through the real commands instead - send, then accept - because
+    // that is the path a real pair of users takes and nothing covered it.
+
+    [Fact]
+    public async Task A_friendship_made_the_real_way_shows_both_feeds()
+    {
+        await using var h = new ClaimTestHarness();
+        var friend = h.AddUser("Nidha", "nidha@example.com");
+
+        // I ask, they accept - exactly what the two of us would tap.
+        var friendshipId = await new SendFriendRequestCommandHandler(h.Db, new TestCurrentUser(h.UserId), h.Clock)
+            .Handle(new SendFriendRequestCommand("nidha@example.com"), CancellationToken.None);
+
+        await new RespondToFriendRequestCommandHandler(h.Db, new TestCurrentUser(friend), h.Clock)
+            .Handle(new RespondToFriendRequestCommand(friendshipId, true), CancellationToken.None);
+
+        var mine = await h.Claim("SOLO_TRIP");
+
+        var theirFeed = await Feed(h, friend);
+        Assert.Contains(theirFeed, f => f.UserAchievementId == mine.UserAchievementId);
+
+        // And they can react to it.
+        var reaction = await new ToggleReactionCommandHandler(h.Db, new TestCurrentUser(friend), h.Clock)
+            .Handle(new ToggleReactionCommand(mine.UserAchievementId, "Cheer"), CancellationToken.None);
+        Assert.Equal(1, reaction.Cheers);
+    }
+
+    [Fact]
+    public async Task Accepting_by_asking_back_also_shows_both_feeds()
+    {
+        await using var h = new ClaimTestHarness();
+        var friend = h.AddUser("Nidha", "nidha@example.com");
+
+        // They ask first, I answer by adding them rather than tapping Yes - the crossed
+        // request path, which SendFriendRequest treats as an acceptance.
+        await new SendFriendRequestCommandHandler(h.Db, new TestCurrentUser(friend), h.Clock)
+            .Handle(new SendFriendRequestCommand(h.UserEmail), CancellationToken.None);
+
+        await new SendFriendRequestCommandHandler(h.Db, new TestCurrentUser(h.UserId), h.Clock)
+            .Handle(new SendFriendRequestCommand("nidha@example.com"), CancellationToken.None);
+
+        var mine = await h.Claim("SOLO_TRIP");
+
+        Assert.Contains(await Feed(h, friend), f => f.UserAchievementId == mine.UserAchievementId);
+    }
+
     // ------------------------------------------------------------ verification --
 
     [Fact]

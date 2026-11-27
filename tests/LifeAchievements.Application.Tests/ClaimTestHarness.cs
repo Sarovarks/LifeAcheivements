@@ -23,6 +23,9 @@ public sealed class ClaimTestHarness : IAsyncDisposable
     public TestClock Clock { get; }
     public Guid UserId { get; }
 
+    /// <summary>The primary player's address, for tests that add friends the real way.</summary>
+    public string UserEmail => "player@example.com";
+
     public ClaimTestHarness(DateTimeOffset? now = null)
     {
         _connection = new SqliteConnection("DataSource=:memory:");
