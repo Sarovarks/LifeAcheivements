@@ -32,3 +32,17 @@
 # Not fingerprinted either, same reasoning as css above.
 /js/*
   Cache-Control: no-cache
+
+# Nobody requests /index.html - they request / or a deep link, and Cloudflare matches on the
+# requested path, so the rule above never applies to real traffic. Cloudflare's default here
+# (max-age=0, must-revalidate) already revalidates every time, so nothing was stale; this just
+# makes the rule match the path it was written for.
+/
+  Cache-Control: no-store
+
+# Blazor's scoped-CSS bundle keeps its name across builds, exactly like app.css.
+/*.styles.css
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache
