@@ -63,6 +63,20 @@ app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }))
 // Readiness: can it actually serve traffic, database included.
 app.MapHealthChecks("/health/ready").AllowAnonymous();
 
+// Which build is actually running. Without this the only way to tell whether a deploy had
+// landed was to exercise a behaviour that changed in it - which is how two backend commits
+// sat undeployed for forty minutes without anything looking wrong. Render sets
+// RENDER_GIT_COMMIT; anywhere else this reports "local".
+app.MapGet("/health/version", () => Results.Ok(new
+    {
+        commit = Environment.GetEnvironmentVariable("RENDER_GIT_COMMIT") ?? "local",
+        branch = Environment.GetEnvironmentVariable("RENDER_GIT_BRANCH") ?? "local",
+        startedAt = StartedAt
+    }))
+    .AllowAnonymous()
+    .WithTags("Health")
+    .WithSummary("The commit this instance is running, and when it started.");
+
 // Identity also maps /auth/register, which only takes an email and a password - so an
 // account created through it has no display name and shows up nameless in the feed. The game
 // asks for a name on the first screen, so /auth/signup is the only way in. MapIdentityApi
@@ -103,3 +117,10 @@ if (builder.Configuration.GetValue("RunMigrationsOnStartup", defaultValue: true)
 app.Run();
 
 public partial class Program;
+
+// Captured once at startup so /health/version can say how long this instance has been up -
+// a restart is visible even when the commit has not changed.
+public partial class Program
+{
+    private static readonly DateTimeOffset StartedAt = DateTimeOffset.UtcNow;
+}
