@@ -849,3 +849,10 @@ button:disabled { cursor: not-allowed; }
 }
 
 .tab--active .badge-count { background: var(--gold-ink); color: var(--gold); }
+
+/* Keeps the caption attached to the button it explains - the column gap on .unlock__actions
+   would otherwise leave it floating equidistant between the two buttons. */
+.unlock__share { display: flex; flex-direction: column; gap: 6px; }
+
+.unlock__share-state { font-size: 0.8rem; color: var(--teal); font-weight: 600; text-align: center; margin: 2px 0 0; }
+.unlock__feed-note { font-size: 0.76rem; color: var(--muted); text-align: center; margin: 2px 0 0; }

@@ -95,9 +95,16 @@
         }
 
         <div class="unlock__actions">
-            <button class="btn btn--gold" disabled title="Coming in Phase 2">
-                <Icon Name="friends" Size="19" /> Share with friends
-            </button>
+            <div class="unlock__share">
+                <button class="btn btn--gold" @onclick="ShareAsync">
+                    <Icon Name="friends" Size="19" /> Share with friends
+                </button>
+                @if (_shareState is not null)
+                {
+                    <p class="unlock__share-state">@_shareState</p>
+                }
+                <p class="unlock__feed-note">It is already in your friends' feed.</p>
+            </div>
             <button class="btn btn--ghost" @onclick="CloseWithNote">Back to home</button>
         </div>
     </div>
@@ -108,10 +115,13 @@
     [Parameter] public EventCallback OnClose { get; set; }
 
     [Inject] public GameApiClient Api { get; set; } = null!;
+    [Inject] public IJSRuntime Js { get; set; } = null!;
+    [Inject] public NavigationManager Nav { get; set; } = null!;
 
     private string _note = string.Empty;
     private string? _noteState;
     private string _savedNote = string.Empty;
+    private string? _shareState;
 
     private void OnNoteInput(ChangeEventArgs e)
     {
@@ -137,6 +147,51 @@
         {
             _noteState = "Could not save";
         }
+    }
+
+    /// <summary>
+    /// Opens the device's share sheet. Unlocks already reach friends through the in-app feed,
+    /// so this is for the friends who are not on here yet - and on a desktop browser with no
+    /// share sheet it falls back to the clipboard rather than doing nothing.
+    /// </summary>
+    private async Task ShareAsync()
+    {
+        // Save first, so what gets shared matches what the feed will show.
+        await SaveNote();
+
+        string outcome;
+        try
+        {
+            outcome = await Js.InvokeAsync<string>(
+                "scoreMyLife.share", "ScoreMyLife", ShareText(), Nav.BaseUri);
+        }
+        catch (JSException)
+        {
+            outcome = "unavailable";
+        }
+
+        _shareState = outcome switch
+        {
+            "shared" => "Shared",
+            "copied" => "Copied - paste it anywhere",
+            "cancelled" => null,
+            _ => "Sharing is not available in this browser"
+        };
+    }
+
+    private string ShareText()
+    {
+        var text = $"I unlocked \"{Result.Name}\" on ScoreMyLife - +{Result.XpGained} XP";
+
+        if (Result.LeveledUp)
+        {
+            text += $", and hit level {Result.NewLevel}: {Result.NewLevelTitle}";
+        }
+
+        text += ".";
+
+        var note = _note.Trim();
+        return note.Length > 0 ? $"{text} {note}" : text;
     }
 
     private async Task CloseWithNote()

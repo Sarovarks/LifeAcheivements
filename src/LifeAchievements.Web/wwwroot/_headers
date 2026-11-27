@@ -28,3 +28,7 @@
 # no-cache still lets the browser keep it, but it must revalidate, so an edit shows up at once.
 /css/*
   Cache-Control: no-cache
+
+# Not fingerprinted either, same reasoning as css above.
+/js/*
+  Cache-Control: no-cache
