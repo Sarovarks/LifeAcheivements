@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<RemoveFriendCommand, bool>, RemoveFriendCommandHandler>();
         services.AddScoped<ICommandHandler<VerifyClaimCommand, VerifyClaimResultDto>, VerifyClaimCommandHandler>();
         services.AddScoped<ICommandHandler<ToggleReactionCommand, ReactionResultDto>, ToggleReactionCommandHandler>();
+        services.AddScoped<ICommandHandler<MarkNotificationsSeenCommand, bool>, MarkNotificationsSeenCommandHandler>();
 
         // Queries
         services.AddScoped<IQueryHandler<GetMeQuery, MeDto>, GetMeQueryHandler>();
@@ -45,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetFeedQuery, IReadOnlyList<FeedItemDto>>, GetFeedQueryHandler>();
         services.AddScoped<IQueryHandler<GetPendingVerificationsQuery, IReadOnlyList<PendingVerificationDto>>, GetPendingVerificationsQueryHandler>();
         services.AddScoped<IQueryHandler<GetWeeklyLeaderboardQuery, WeeklyLeaderboardDto>, GetWeeklyLeaderboardQueryHandler>();
+        services.AddScoped<IQueryHandler<GetNotificationsQuery, NotificationsDto>, GetNotificationsQueryHandler>();
 
         // Domain event handlers
         services.AddScoped<IDomainEventHandler<AchievementUnlocked>, HiddenAchievementRulesHandler>();
