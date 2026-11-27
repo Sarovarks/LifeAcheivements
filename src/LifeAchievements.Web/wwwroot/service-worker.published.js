@@ -32,7 +32,7 @@ async function onInstall(event) {
     // serving its old cache forever. Caching individually means one bad asset costs offline
     // support for that file alone, instead of wedging every visitor on a stale build.
     const results = await Promise.allSettled(
-        assetsRequests.map(request => cache.add(request)));
+        assetsRequests.map(request => cacheAsset(cache, request)));
 
     const failed = results.filter(r => r.status === 'rejected');
     if (failed.length > 0) {
@@ -42,6 +42,24 @@ async function onInstall(event) {
     // Take over straight away rather than waiting for every tab of the site to be closed.
     // Without this a deploy can sit unused for days while the old worker serves stale files.
     await self.skipWaiting();
+}
+
+// Deliberately not cache.add: Cloudflare answers /index.html with a 308 to /, and the Cache
+// API refuses to hand a response carrying the redirected flag to a navigation request - the
+// offline fallback would throw instead of showing the app shell. Copying the body into a
+// fresh response drops that flag. Integrity is still enforced, because fetch checks it
+// against the request before we ever get here.
+async function cacheAsset(cache, request) {
+    const response = await fetch(request);
+    if (!response.ok) {
+        throw new Error(`${request.url} responded ${response.status}`);
+    }
+
+    await cache.put(request.url, new Response(await response.blob(), {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers
+    }));
 }
 
 async function onActivate(event) {

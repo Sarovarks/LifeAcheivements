@@ -221,6 +221,25 @@ The clincher was the deployment-specific URL working: same Cloudflare, same QUIC
 origin, therefore no service worker. Assets now cache individually and a new worker takes over
 immediately.
 
+### A service worker that made every cache rule pointless
+
+Found the next day, testing the live site. The worker was cache-first for every GET, and
+`index.html`, `appsettings.json` and `css/app.css` were all in its precache. A service worker
+answers before the network is consulted, so none of the `no-store` rules in `_headers` reached
+anyone who had visited the site before — they kept running an old build, pointed at whichever
+API address was current on their first visit. The caching work of the previous day was real and
+correct and had no effect on returning visitors.
+
+Now network-first with the cache as an offline fallback only, and cross-origin and non-GET
+requests bypass the worker entirely. Nothing is slower: `fetch` inside the worker still honours
+`Cache-Control`, and `_framework/*` is immutable, so those files never touch the network either
+way. Offline support drops to the app shell, which is the honest ceiling for an app that can do
+nothing without its API.
+
+The general lesson is worth keeping: a service worker overrides HTTP caching rather than
+cooperating with it, so cache headers and a cache-first worker are not two layers of the same
+strategy — the worker simply wins.
+
 ### An `apt-get` that broke CI
 
 `curl` was installed in the API image purely to give the container a `HEALTHCHECK` — which
