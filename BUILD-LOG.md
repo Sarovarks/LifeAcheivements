@@ -301,6 +301,26 @@ cached total after every scenario.
 
 ---
 
+## After the first day
+
+Two things surfaced once the app was being used rather than built.
+
+**The cache bug above** - found on day two, and the reason the previous day's cache work had
+no visible effect.
+
+**"Share with friends" had never been wired up.** It was still `disabled` with
+`title="Coming in Phase 2"`; Phase 2 built the friends feed and never came back to the unlock
+screen. It now draws the unlock as a 1080x1350 PNG on a canvas - the badge, the XP, the tier,
+the note, the level bar - and hands it to the device's share sheet, falling back to a download
+plus the text on the clipboard where there is no sheet. The badge icon is lifted out of the
+live DOM rather than restated in JavaScript, so the card cannot drift from the app's icon set.
+
+The label was also half a lie, which mattered more than the dead button: an approved unlock is
+in the friends feed the moment it is claimed. A caption under the button says so now, because
+otherwise the share sheet implies the opposite.
+
+---
+
 ## What Phase 4 would be
 
 Auto-unlocks from background jobs, push notifications, Redis for the leaderboard, and a queue

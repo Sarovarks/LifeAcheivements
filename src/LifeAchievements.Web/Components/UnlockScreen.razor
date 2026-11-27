@@ -159,11 +159,14 @@
         // Save first, so what gets shared matches what the feed will show.
         await SaveNote();
 
+        _shareState = "Drawing your card...";
+        StateHasChanged();
+
         string outcome;
         try
         {
             outcome = await Js.InvokeAsync<string>(
-                "scoreMyLife.share", "ScoreMyLife", ShareText(), Nav.BaseUri);
+                "scoreMyLife.share", ShareCard(), "ScoreMyLife", ShareText(), Nav.BaseUri);
         }
         catch (JSException)
         {
@@ -173,11 +176,34 @@
         _shareState = outcome switch
         {
             "shared" => "Shared",
+            "shared-text" => "Shared - this browser would not take the image",
+            "saved" => "Card saved, text copied",
+            "saved-only" => "Card saved to your downloads",
             "copied" => "Copied - paste it anywhere",
             "cancelled" => null,
             _ => "Sharing is not available in this browser"
         };
     }
+
+    /// <summary>
+    /// What the shared image shows. The icon is named by CSS selector rather than passed as
+    /// markup, so the card draws the very badge on screen and can never drift from the app's
+    /// icon set.
+    /// </summary>
+    private object ShareCard() => new
+    {
+        kicker = Result.Status == AchievementStatuses.Pending ? "Waiting on a friend" : "Achievement unlocked",
+        name = Result.Name,
+        description = Result.Description,
+        tier = Result.Tier,
+        xpText = Result.Status == AchievementStatuses.Pending ? "Friend verifies" : $"+{Result.XpGained} XP",
+        note = _note.Trim(),
+        levelLabel = $"Level {Result.NewLevel} · {Result.NewLevelTitle}",
+        levelRight = $"{Result.XpToNextLevel} XP to go",
+        progressPercent = Result.ProgressPercent,
+        iconSelector = ".badge svg",
+        footer = Nav.BaseUri.Replace("https://", "").Replace("http://", "").TrimEnd('/')
+    };
 
     private string ShareText()
     {
