@@ -70,7 +70,7 @@ public class GetFeedQueryHandler(IAppDbContext db, ICurrentUser currentUser)
             return new FeedItemDto(
                 u.Id,
                 u.UserId,
-                person?.DisplayName ?? "Someone",
+                Display(person?.DisplayName),
                 LevelCurve.LevelFor(person?.TotalXp ?? 0),
                 u.AchievementId,
                 u.Name,
@@ -87,4 +87,12 @@ public class GetFeedQueryHandler(IAppDbContext db, ICurrentUser currentUser)
                 IsMine: u.UserId == userId);
         }).ToList();
     }
+
+    /// <summary>
+    /// A name to show. Null was already handled; blank was not, and an account created
+    /// through Identity's own /auth/register has an empty display name, which rendered as
+    /// a nameless row in the feed.
+    /// </summary>
+    private static string Display(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? "Someone" : name;
 }

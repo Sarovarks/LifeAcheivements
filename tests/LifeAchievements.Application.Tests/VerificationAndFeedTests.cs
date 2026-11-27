@@ -363,6 +363,23 @@ public class VerificationAndFeedTests
     }
 
     [Fact]
+    public async Task A_nameless_account_does_not_show_a_blank_name_in_the_feed()
+    {
+        await using var h = new ClaimTestHarness();
+
+        // Identity's own /auth/register creates exactly this: an account with no display
+        // name. It showed up in the feed as an unlock by nobody.
+        var nameless = h.AddUser("", "nameless@example.com");
+        h.MakeFriends(h.UserId, nameless);
+
+        var unlock = await h.ClaimAs(nameless, "HALF_MARATHON");
+
+        var item = (await Feed(h, h.UserId)).Single(f => f.UserAchievementId == unlock.UserAchievementId);
+
+        Assert.Equal("Someone", item.DisplayName);
+    }
+
+    [Fact]
     public async Task Reaction_counts_come_back_on_the_feed()
     {
         await using var h = new ClaimTestHarness();

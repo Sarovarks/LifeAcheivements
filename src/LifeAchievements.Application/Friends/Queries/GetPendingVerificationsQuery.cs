@@ -54,7 +54,7 @@ public class GetPendingVerificationsQueryHandler(IAppDbContext db, ICurrentUser 
                 return new PendingVerificationDto(
                     c.Id,
                     c.UserId,
-                    person?.DisplayName ?? "Someone",
+                    Display(person?.DisplayName),
                     LevelCurve.LevelFor(person?.TotalXp ?? 0),
                     c.AchievementId,
                     c.Name,
@@ -67,4 +67,12 @@ public class GetPendingVerificationsQueryHandler(IAppDbContext db, ICurrentUser 
             })
             .ToList();
     }
+
+    /// <summary>
+    /// A name to show. Null was already handled; blank was not, and an account created
+    /// through Identity's own /auth/register has an empty display name, which rendered as
+    /// a nameless row in the feed.
+    /// </summary>
+    private static string Display(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? "Someone" : name;
 }

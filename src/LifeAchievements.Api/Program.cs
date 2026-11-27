@@ -63,7 +63,26 @@ app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }))
 // Readiness: can it actually serve traffic, database included.
 app.MapHealthChecks("/health/ready").AllowAnonymous();
 
-// Identity's built-in bearer-token endpoints: /auth/register, /auth/login, /auth/refresh, ...
+// Identity also maps /auth/register, which only takes an email and a password - so an
+// account created through it has no display name and shows up nameless in the feed. The game
+// asks for a name on the first screen, so /auth/signup is the only way in. MapIdentityApi
+// cannot leave one endpoint out, so it is turned away here instead.
+app.Use(async (context, next) =>
+{
+    if (HttpMethods.IsPost(context.Request.Method)
+        && context.Request.Path.Equals("/auth/register", StringComparison.OrdinalIgnoreCase))
+    {
+        await Results.Problem(
+            title: "Use /auth/signup",
+            detail: "Registration needs a display name. Post email, password and displayName to /auth/signup.",
+            statusCode: StatusCodes.Status404NotFound).ExecuteAsync(context);
+        return;
+    }
+
+    await next();
+});
+
+// Identity's built-in bearer-token endpoints: /auth/login, /auth/refresh, ...
 app.MapGroup("/auth").MapIdentityApi<AppUser>().WithTags("Auth");
 
 app.MapAuthExtras();
